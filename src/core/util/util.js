@@ -460,6 +460,10 @@ export function getPointsResultPts(points = [], ptKey = '_pt') {
     const resultPoints = [];
     for (let i = 0, len = points.length; i < len; i++) {
         const point = points[i];
+        if (!point) {
+            resultPoints.push(null);
+            continue;
+        }
         if (!point[ptKey]) {
             point[ptKey] = new Point(0, 0);
         }
@@ -496,4 +500,19 @@ export function getAbsoluteURL(url) {
     url = a.href;
     a = null;
     return url;
+}
+
+const CANVAS_SIZE_TEMP = {
+    cssWidth: '1px',
+    cssHeight: '1px',
+    width: 1,
+    height: 1
+};
+export function calCanvasSize(size, devicePixelRatio = 1) {
+    const { width, height } = size;
+    CANVAS_SIZE_TEMP.cssWidth = width + 'px';
+    CANVAS_SIZE_TEMP.cssHeight = height + 'px';
+    CANVAS_SIZE_TEMP.width = Math.round(width * devicePixelRatio);
+    CANVAS_SIZE_TEMP.height = Math.round(height * devicePixelRatio);
+    return CANVAS_SIZE_TEMP;
 }
