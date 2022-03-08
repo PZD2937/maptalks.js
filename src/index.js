@@ -68,7 +68,8 @@ export { symbolizer, animation };
 export { registerWorkerAdapter } from './core/worker/Worker';
 
 import Actor from './core/worker/Actor';
-
+import GeometryEditor from './geometry/editor/GeometryEditor';
+export { GeometryEditor };
 /**
  * @namespace worker
  */

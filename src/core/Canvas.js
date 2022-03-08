@@ -8,11 +8,11 @@ import {
     extractCssUrl,
     computeDegree
 } from './util';
-import { isGradient } from './util/style';
-import { createEl } from './util/dom';
+import {isGradient} from './util/style';
+import {createEl} from './util/dom';
 import Browser from './Browser';
 import Point from '../geo/Point';
-import { getFont, getAlignPoint } from './util/strings';
+import {getFont, getAlignPoint} from './util/strings';
 
 const DEFAULT_STROKE_COLOR = '#000';
 const DEFAULT_FILL_COLOR = 'rgba(255,255,255,0)';
@@ -211,7 +211,19 @@ const Canvas = {
             }
         }
         if (imageTexture) {
-            ctx.strokeStyle = ctx.createPattern(imageTexture, 'repeat');
+            try {
+                ctx.strokeStyle = ctx.createPattern(imageTexture, 'repeat');
+            } catch (e) {
+                let w;
+                if (!imageTexture.width || !imageTexture.height) {
+                    w = strokeWidth;
+                } else {
+                    w = Math.round(imageTexture.width * strokeWidth / imageTexture.height);
+                }
+                const patternCanvas = Canvas.createCanvas(w, strokeWidth, ctx.canvas.constructor);
+                Canvas.image(patternCanvas.getContext('2d'), imageTexture, 0, 0, w, strokeWidth);
+                ctx.strokeStyle = ctx.createPattern(patternCanvas, 'repeat');
+            }
             ctx.strokeStyle['linePatternOffset'] = linePatternOffset;
         } else if (typeof console !== 'undefined') {
             console.warn('img not found for', imgUrl);
@@ -689,6 +701,7 @@ const Canvas = {
                 return ctrlPoints;
             }
         }
+
         let count = points.length;
         let l = close ? count : count - 1;
 
@@ -826,6 +839,7 @@ const Canvas = {
             ctx.bezierCurveTo(x - ox, y + b1, x - a, y + oy1, x - a, y);
             ctx.closePath();
         }
+
         ctx.beginPath();
         if (width === heightTop && width === heightBottom) {
             ctx.arc(pt.x, pt.y, width, 0, 2 * Math.PI);
@@ -847,7 +861,7 @@ const Canvas = {
 
     rectangle(ctx, pt, size, lineOpacity, fillOpacity) {
         // pt = pt._round();
-        const { x, y } = pt;
+        const {x, y} = pt;
         ctx.beginPath();
         ctx.rect(x, y, size['width'], size['height']);
         Canvas.fillCanvas(ctx, fillOpacity, x, y);
@@ -869,6 +883,7 @@ const Canvas = {
             Canvas.fillCanvas(ctx, fillOpacity, x - radius, y - radius);
             Canvas._stroke(ctx, lineOpacity, x - radius, y - radius);
         }
+
         sector(ctx, pt.x, pt.y, size, startAngle, endAngle);
     },
 

@@ -83,6 +83,9 @@ class CanvasRenderer extends Class {
                         this.layer.fire('resourceload');
                         this.setToRedraw();
                     }
+                }).catch(err => {
+                    console.error(err);
+                    this._loadingResource = false;
                 });
             } else {
                 drawFn.call(this, ...args);

@@ -72,7 +72,7 @@ class TileHashset {
  * @property {Number}              [options.zoomOffset=0]           - offset from map's zoom to tile's zoom
  * @property {Number}              [options.tileRetryCount=0]       - retry count of tiles
  * @property {String}              [options.errorUrl=null]       - image to replace when encountering error on loading tile image
- * @property {String}              [options.token=null]       - token to replace {token} in template http://foo/bar/{z}/{x}/{y}?token={token}
+ * @property {Object}              [options.customTags]          - custom replace keywords in template links
  * @property {Object}              [options.fetchOptions=object]       - fetch params,such as fetchOptions: { 'headers': { 'accept': '' } }, about accept value more info https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation/List_of_default_Accept_values
  * @memberOf TileLayer
  * @instance
@@ -670,8 +670,9 @@ class TileLayer extends Layer {
             'z': z,
             's': domain
         };
-        if (this.options.token) {
-            data.token = this.options.token;
+        if (this.options.customTags) {
+            // data.token = this.options.token;
+            Object.assign(data, this.options.customTags);
         }
         return urlTemplate.replace(URL_PATTERN, function (str, key) {
             let value = data[key];
@@ -1088,7 +1089,7 @@ class TileLayer extends Layer {
     _getTileOffset(z) {
         let offset = this.options['offset'];
         if (isFunction(offset)) {
-            offset = offset(z);
+            offset = offset(z, this.getMap());
         }
         return offset;
     }
@@ -1260,13 +1261,17 @@ function (exports) {
         }, fetchOptions);
     };
 
-    var offCanvas, offCtx;
+    var offCanvas, offCtx, fetchFun = fetch;
     function requestImageOffscreen(url, cb, fetchOptions) {
         if (!offCanvas) {
             offCanvas = new OffscreenCanvas(2, 2);
             offCtx = offCanvas.getContext('2d');
         }
-        fetch(url, fetchOptions ? fetchOptions : {})
+        if(url.includes('file://')) {
+            console.warn('fetch不支持file协议！');
+            fetchFun = fetchLocal;
+        }
+        fetchFun(url, fetchOptions ? fetchOptions : {})
             .then(response => response.blob())
             .then(blob => createImageBitmap(blob))
             .then(bitmap => {
@@ -1276,13 +1281,27 @@ function (exports) {
                 offCtx.drawImage(bitmap, 0, 0);
                 bitmap.close();
                 var imgData = offCtx.getImageData(0, 0, width, height);
-                // debugger
                 cb(null, { width, height, data: new Uint8Array(imgData.data) });
             }).catch(err => {
                 console.warn('error when loading tile:', url);
                 console.warn(err);
                 cb(err);
             });
+    }
+
+    function fetchLocal(url) {
+        return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+                resolve(new Response(xhr.response, { status: xhr.status > 200 && xhr.status < 599 ? xhr.status : 200 }));
+            };
+            xhr.onerror = function () {
+                reject(new TypeError('Local request failed'));
+            };
+            xhr.open('GET', url);
+            xhr.responseType = 'arraybuffer';
+            xhr.send(null);
+        });
     }
 }`;
 

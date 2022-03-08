@@ -581,7 +581,7 @@ class TileLayerCanvasRenderer extends CanvasRenderer {
 
     _findChildTiles(info) {
         const layer = this._getLayerOfTile(info.layer);
-        if (!layer.options['background']) {
+        if (!layer || !layer.options['background']) {
             return [];
         }
         const map = this.getMap();
@@ -627,7 +627,7 @@ class TileLayerCanvasRenderer extends CanvasRenderer {
     _findParentTile(info) {
         const map = this.getMap(),
             layer = this._getLayerOfTile(info.layer);
-        if (!layer.options['background']) {
+        if (!layer || !layer.options['background']) {
             return null;
         }
         const sr = layer.getSpatialReference();
