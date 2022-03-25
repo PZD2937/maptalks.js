@@ -174,7 +174,7 @@ class InfoWindow extends UIComponent {
         }
         this._onCloseBtnClick = this.hide.bind(this);
         const closeBtn = dom.querySelector('.maptalks-close');
-        addDomEvent(closeBtn, 'click touchend', this._onCloseBtnClick);
+        addDomEvent(closeBtn, 'click', this._onCloseBtnClick);
         //reslove content
         this._replaceTemplate(msgContent);
         return dom;

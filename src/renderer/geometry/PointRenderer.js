@@ -50,7 +50,6 @@ const PolyRenderer = {
         const map = this.getMap();
         const glRes = map.getGLRes();
         let points, rotations = null;
-        const markerAutoRotation = !!(this.options.markerAutoRotation === undefined || this.options.markerAutoRotation);
         if (placement === 'point') {
             points = this._getPath2DPoints(this._getPrjCoordinates(), false, glRes);
             if (points && points.length > 0 && Array.isArray(points[0])) {
@@ -60,25 +59,23 @@ const PolyRenderer = {
         } else if (placement === 'vertex') {
             points = this._getPath2DPoints(this._getPrjCoordinates(), false, glRes);
             rotations = [];
-            if (markerAutoRotation) {
-                if (points && points.length > 0 && Array.isArray(points[0])) {
-                    for (let i = 0, l = points.length; i < l; i++) {
-                        for (let ii = 0, ll = points[i].length; ii < ll; ii++) {
-                            if (ii === 0) {
-                                rotations.push([points[i][ii], points[i][ii + 1]]);
-                            } else {
-                                rotations.push([points[i][ii - 1], points[i][ii]]);
-                            }
+            if (points && points.length > 0 && Array.isArray(points[0])) {
+                for (let i = 0, l = points.length; i < l; i++) {
+                    for (let ii = 0, ll = points[i].length; ii < ll; ii++) {
+                        if (ii === 0) {
+                            rotations.push([points[i][ii], points[i][ii + 1]]);
+                        } else {
+                            rotations.push([points[i][ii - 1], points[i][ii]]);
                         }
                     }
-                    points = points[0].concat(points[1]);
-                } else {
-                    for (let i = 0, l = points.length; i < l; i++) {
-                        if (i === 0) {
-                            rotations.push([points[i], points[i + 1]]);
-                        } else {
-                            rotations.push([points[i - 1], points[i]]);
-                        }
+                }
+                points = points[0].concat(points[1]);
+            } else {
+                for (let i = 0, l = points.length; i < l; i++) {
+                    if (i === 0) {
+                        rotations.push([points[i], points[i + 1]]);
+                    } else {
+                        rotations.push([points[i - 1], points[i]]);
                     }
                 }
             }
@@ -97,7 +94,7 @@ const PolyRenderer = {
                     }
                     for (let ii = 1, ll = ring.length; ii < ll; ii++) {
                         points.push(ring[ii].add(ring[ii - 1])._multi(0.5));
-                        markerAutoRotation && rotations.push([ring[ii - 1], ring[ii]]);
+                        rotations.push([ring[ii - 1], ring[ii]]);
                     }
                 }
             } else {
@@ -106,7 +103,7 @@ const PolyRenderer = {
                 }
                 for (let i = 1, l = vertice.length; i < l; i++) {
                     points.push(vertice[i].add(vertice[i - 1])._multi(0.5));
-                    markerAutoRotation && rotations.push([vertice[i - 1], vertice[i]]);
+                    rotations.push([vertice[i - 1], vertice[i]]);
                 }
             }
 
@@ -115,14 +112,14 @@ const PolyRenderer = {
             const l = coords.length;
             const point0 = l ? map._prjToPointAtRes(coords[0], glRes) : null;
             points = l ? [point0] : [];
-            rotations = l && markerAutoRotation ? [[point0, coords[1] ? map._prjToPointAtRes(coords[1], glRes) : point0]] : [];
+            rotations = l ? [[point0, coords[1] ? map._prjToPointAtRes(coords[1], glRes) : point0]] : [];
         } else if (placement === 'vertex-last') {
             const coords = this._getPrjCoordinates();
             const l = coords.length;
             const curretPoint = l ? map._prjToPointAtRes(coords[l - 1], glRes) : null;
             points = l ? [curretPoint] : [];
             const previous = l > 1 ? l - 2 : l - 1;
-            rotations = l && markerAutoRotation ? [[coords[previous] ? map._prjToPointAtRes(coords[previous], glRes) : curretPoint, curretPoint]] : [];
+            rotations = l ? [[coords[previous] ? map._prjToPointAtRes(coords[previous], glRes) : curretPoint, curretPoint]] : [];
         } else {
             const pcenter = this._getProjection().project(this.getCenter());
             points = [map._prjToPointAtRes(pcenter, glRes)];
