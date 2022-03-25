@@ -148,6 +148,8 @@ if (!IS_NODE) {
     if (typeof window !== 'undefined' && window.matchMedia) {
         for (let i = 1; i < 500; i++) {
             const dpi = (i * 0.01).toFixed(2);
+            window.matchMedia(`screen and (resolution: ${dpi}dppx)`)
+                .addEventListener('change', Browser.checkDevicePixelRatio);
             const screen = window.matchMedia(`screen and (resolution: ${dpi}dppx)`);
             if (screen) {
                 if (screen.addEventListener) {
@@ -156,7 +158,6 @@ if (!IS_NODE) {
                     screen.addListener(Browser.checkDevicePixelRatio);
                 }
             }
-
         }
 
     }
