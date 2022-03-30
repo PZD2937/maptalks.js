@@ -612,7 +612,8 @@ class DrawTool extends MapTool {
         let drawToolLayer = this._map.getLayer(drawLayerId);
         if (!drawToolLayer) {
             drawToolLayer = new VectorLayer(drawLayerId, {
-                'enableSimplify': false
+                'enableSimplify': false,
+                'zIndex': Infinity
             });
             this._map.addLayer(drawToolLayer);
         }
