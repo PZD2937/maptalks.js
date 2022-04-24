@@ -316,6 +316,7 @@ class VectorLayerRenderer extends OverlayLayerCanvasRenderer {
                 if (!painter) {
                     painter = geo._getPainter();
                 }
+                if (!painter) continue;
                 const point = painter.getRenderPoints(PLACEMENT_CENTER)[0][0];
                 const altitude = layerOpts['enableAltitude'] ? geo.getAltitude() : layerAltitude;
                 //减少方法的调用
