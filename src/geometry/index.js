@@ -18,6 +18,7 @@ import QuadBezierCurve from './QuadBezierCurve';
 import TextMarker from './TextMarker';
 import TextBox from './TextBox';
 import Label from './Label';
+import MarkerLabel from './MarkerLabel';
 import { ConnectorLine, ArcConnectorLine } from './ConnectorLine';
 
 export {
@@ -41,5 +42,6 @@ export {
     Rectangle,
     Sector,
     TextBox,
-    TextMarker
+    TextMarker,
+    MarkerLabel
 };
