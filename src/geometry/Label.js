@@ -1,5 +1,5 @@
-import { extend } from '../core/util';
-import { getAlignPoint, escapeSpecialChars } from '../core/util/strings';
+import {extend} from '../core/util';
+import {getAlignPoint, escapeSpecialChars} from '../core/util/strings';
 import Size from '../geo/Size';
 import TextMarker from './TextMarker';
 
@@ -16,7 +16,7 @@ import TextMarker from './TextMarker';
  * @instance
  */
 const options = {
-    'boxStyle' : null, /*{
+    'boxStyle': null, /*{
         'padding' : [12, 8],
         'verticalAlignment' : 'middle',
         'horizontalAlignment' : 'middle',
@@ -24,7 +24,7 @@ const options = {
         'minHeight' : 0,
         'symbol' : null
     }*/
-    textSymbol : null
+    textSymbol: null
 };
 
 /**
@@ -36,8 +36,8 @@ const options = {
  * @mixes TextEditable
  * @example
  * var label = new maptalks.Label('label with a box',
-    [0, 0],
-    {
+ [0, 0],
+ {
       'draggable' : true,
       'boxStyle' : {
         'padding' : [12, 8],
@@ -151,7 +151,7 @@ class Label extends TextMarker {
         const symbol = extend({},
             this.getTextSymbol(),
             {
-                'textName' : this._content
+                'textName': this._content
             });
 
         const boxStyle = this.getBoxStyle();
@@ -175,7 +175,7 @@ class Label extends TextMarker {
             if (hAlign === 'left') {
                 symbol['markerDx'] += symbol['markerWidth'] / 2 - padding[0];
             } else if (hAlign === 'right') {
-                symbol['markerDx'] -= symbol['markerWidth'] / 2 - textSize['width'] - padding[0];
+                symbol['markerDx'] -= symbol['markerWidth'] / 2 - textSize['width'] - (padding[2] || padding[0]);
             } else {
                 symbol['markerDx'] += textSize['width'] / 2;
             }
@@ -185,7 +185,7 @@ class Label extends TextMarker {
             if (vAlign === 'top') {
                 symbol['markerDy'] += symbol['markerHeight'] / 2 - padding[1];
             } else if (vAlign === 'bottom') {
-                symbol['markerDy'] -= symbol['markerHeight'] / 2 - textSize['height'] - padding[1];
+                symbol['markerDy'] -= symbol['markerHeight'] / 2 - textSize['height'] - (padding[3] || padding[1]);
             } else {
                 symbol['markerDy'] += textSize['height'] / 2;
             }
@@ -203,8 +203,12 @@ class Label extends TextMarker {
         const size = this._getTextSize(symbol);
         let width, height;
         const padding = boxStyle['padding'] || this._getDefaultPadding();
-        width = size['width'] + padding[0] * 2;
-        height = size['height'] + padding[1] * 2;
+        // eslint-disable-next-line no-unused-expressions
+        padding[2] === undefined && (padding[2] = padding[0]);
+        // eslint-disable-next-line no-unused-expressions
+        padding[3] === undefined && (padding[3] = padding[1]);
+        width = size['width'] + padding[0] + padding[2];
+        height = size['height'] + padding[1] + padding[3];
         if (boxStyle['minWidth']) {
             if (!width || width < boxStyle['minWidth']) {
                 width = boxStyle['minWidth'];

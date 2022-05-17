@@ -44,7 +44,7 @@ class MarkerLabel extends Label {
             if (hAlign === 'left') {
                 symbol['markerDx'] += symbol['markerWidth'] / 2 - padding[0];
             } else if (hAlign === 'right') {
-                symbol['markerDx'] -= symbol['markerWidth'] / 2 - textSize['width'] - padding[0];
+                symbol['markerDx'] -= symbol['markerWidth'] / 2 - textSize['width'] - (padding[2] || padding[0]);
             } else {
                 symbol['markerDx'] += textSize['width'] / 2;
             }
@@ -54,7 +54,7 @@ class MarkerLabel extends Label {
             if (vAlign === 'top') {
                 symbol['markerDy'] += symbol['markerHeight'] / 2 - padding[1];
             } else if (vAlign === 'bottom') {
-                symbol['markerDy'] -= symbol['markerHeight'] / 2 - textSize['height'] - padding[1];
+                symbol['markerDy'] -= symbol['markerHeight'] / 2 - textSize['height'] - (padding[3] || padding[1]);
             } else {
                 symbol['markerDy'] += textSize['height'] / 2;
             }
