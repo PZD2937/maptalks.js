@@ -73,7 +73,7 @@ class TileHashset {
  * @property {Number}              [options.tileRetryCount=0]       - retry count of tiles
  * @property {String}              [options.errorUrl=null]       - image to replace when encountering error on loading tile image
  * @property {Object}              [options.customTags]          - custom replace keywords in template links
- * @property {Boolean}             [options.decodeImageInWorker=false]  - decode image in worker, for better performance if the server support
+ * @property {Boolean}             [options.decodeImageInWorker=true]  - decode image in worker, for better performance if the server support
  * @property {Object}              [options.fetchOptions=object]       - fetch params,such as fetchOptions: { 'headers': { 'accept': '' } }, about accept value more info https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation/List_of_default_Accept_values
  * @memberOf TileLayer
  * @instance
@@ -126,7 +126,7 @@ const options = {
 
     'pyramidMode': 1,
 
-    'decodeImageInWorker': false
+    'decodeImageInWorker': true
 };
 
 const URL_PATTERN = /\{ *([\w_]+) *\}/g;
