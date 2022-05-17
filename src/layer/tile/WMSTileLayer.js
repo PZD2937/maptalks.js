@@ -28,7 +28,8 @@ const defaultWmsParams = {
     styles: '',
     format: 'image/jpeg',
     transparent: false,
-    version: '1.1.1'
+    version: '1.1.1',
+    crs: null
 };
 
 /**
@@ -57,8 +58,10 @@ class WMSTileLayer extends TileLayer {
         super(id);
         const wmsParams = extend({}, defaultWmsParams);
         for (const p in options) {
-            if (!(p in this.options)) {
-                wmsParams[p] = options[p];
+            if (options.hasOwnProperty(p)) {
+                if (p in defaultWmsParams) {
+                    wmsParams[p] = options[p];
+                }
             }
         }
         this.setOptions(options);
