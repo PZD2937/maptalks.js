@@ -62,8 +62,13 @@ export function drawVectorMarker(ctx, point, symbol, resources) {
         for (let j = vectorArray.length - 1; j >= 0; j--) {
             vectorArray[j]._add(point);
         }
-        //面类型
-        Canvas.polygon(ctx, vectorArray, lineOpacity, fillOpacity);
+        if (style['borderRadius'] && (markerType === 'square' || markerType === 'rectangle')) {
+            point = point.add(-width / 2, -height / 2);
+            Canvas.roundedRectangle(ctx, point, { width, height }, lineOpacity, fillOpacity, style['borderRadius']);
+        } else {
+            //面类型
+            Canvas.polygon(ctx, vectorArray, lineOpacity, fillOpacity);
+        }
     } else if (markerType === 'pin') {
         point = point.add(0, -hLineWidth);
         for (let j = vectorArray.length - 1; j >= 0; j--) {

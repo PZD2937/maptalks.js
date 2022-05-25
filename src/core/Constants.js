@@ -48,6 +48,7 @@ export const NUMERICAL_PROPERTIES = {
     'markerFillOpacity': 1,
     'markerLineWidth': 1,
     'markerLineOpacity': 1,
+    'borderRadius': 1,
     'textSize': 1,
     'textOpacity': 1,
     'textHaloRadius': 1,

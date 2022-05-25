@@ -190,6 +190,7 @@ export default class VectorMarkerSymbolizer extends PointSymbolizer {
             'shadowBlur': getValueOrDefault(s['shadowBlur'], 0),
             'shadowOffsetX': getValueOrDefault(s['shadowOffsetX'], 0),
             'shadowOffsetY': getValueOrDefault(s['shadowOffsetY'], 0),
+            'borderRadius': getValueOrDefault(s['borderRadius'], 0)
         };
         const markerType = result['markerType'];
         const ha = getDefaultHAlign(markerType);
