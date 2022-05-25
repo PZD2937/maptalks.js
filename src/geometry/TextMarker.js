@@ -1,12 +1,12 @@
-import { extend, hasOwn } from '../core/util';
-import { splitTextToRow, escapeSpecialChars } from '../core/util/strings';
+import {extend, hasOwn} from '../core/util';
+import {splitTextToRow, escapeSpecialChars} from '../core/util/strings';
 import Marker from './Marker';
 
 const defaultSymbol = {
     'textFaceName': 'monospace',
     'textSize': 12,
     'textLineSpacing': 8,
-    'textWrapCharacter' : '\n',
+    'textWrapCharacter': '\n',
     'textHorizontalAlignment': 'middle', //left middle right
     'textVerticalAlignment': 'middle' //top middle bottom
 };
@@ -73,29 +73,41 @@ class TextMarker extends Marker {
         return json;
     }
 
-    setSymbol(symbol) {
-        if (this._refreshing || !symbol) {
+    setSymbol(symbol, update) {
+        if (this._refreshing || !symbol || update) {
             return super.setSymbol(symbol);
         }
         const s = this._parseSymbol(symbol);
         if (this.setTextStyle) {
             const style = this.getTextStyle() || {};
             style.symbol = s[0];
-            this.setTextStyle(style);
+            this.options.textStyle = style ? extend({}, style) : style;
         } else if (this.setTextSymbol) {
-            this.setTextSymbol(s[0]);
+            this.options.textSymbol = s[0] ? extend({}, s[0]) : s[0];
         }
         if (this.setBoxStyle) {
             const style = this.getBoxStyle() || {};
             style.symbol = s[1];
-            this.setBoxStyle(style);
+            // this.setBoxStyle(style);
+            this.options.boxStyle = style ? extend({}, style) : style;
         } else if (this.setBoxSymbol) {
-            this.setBoxSymbol(s[1]);
+            // this.setBoxSymbol(s[1]);
+            this.options.boxSymbol = s[1] ? extend({}, s[1]) : s[1];
+        }
+        if (this.setMarkerSymbol) {
+            this.options.markerSymbol = s[2] ? extend({}, s[2]) : s[2];
+        }
+        if (this._refresh) {
+            this._refresh();
         }
         return this;
     }
 
     _parseSymbol(symbol) {
+        if (Array.isArray(symbol)) {
+            const s = this._parseSymbol(symbol[0]);
+            return [s[0], s[1], symbol[1]];
+        }
         const t = {};
         const b = {};
         for (const p in symbol) {

@@ -372,7 +372,7 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
         }
         this._eventSymbolProperties = props;
         delete this._compiledSymbol;
-        return this.setSymbol(s);
+        return this.setSymbol(s, true);
     }
 
     /**
