@@ -192,10 +192,11 @@ Map.include(/** @lends Map.prototype */ {
         const clickTimeThreshold = this.options['clickTimeThreshold'];
         const type = e.type;
         const isMouseDown = type === 'mousedown' || (type === 'touchstart' && (!e.touches || e.touches.length === 1));
-        const isMouseMoving = type === 'momousemove' || (type === 'touchmove' && (!e.touches || e.touches.length === 1));
+        const isMouseMove = type === 'momousemove' || (type === 'touchmove' && (!e.touches || e.touches.length === 1));
+        let ignoreEvent = false;
         // minimum movement event threshold
-        if (isMouseMoving && this._domMouseDownPoint && this._domMouseDownPoint.distanceTo(e.viewPoint) < this.options['minMovingEventThreshold']) {
-            return;
+        if (isMouseMove && this._domMouseDownPoint && this._domMouseDownPoint.distanceTo(e.viewPoint) < this.options['minMovingEventThreshold']) {
+            ignoreEvent = true;
         }
         // prevent default contextmenu
         if (isMouseDown) {
@@ -208,7 +209,7 @@ Map.include(/** @lends Map.prototype */ {
             }, this.options['longPressTimeThreshold']);
         } else {
             // eslint-disable-next-line no-lonely-if
-            if (this._longPressTimer) {
+            if (this._longPressTimer && !ignoreEvent) {
                 clearTimeout(this._longPressTimer);
                 this._longPressTimer = 0;
             }
@@ -270,7 +271,8 @@ Map.include(/** @lends Map.prototype */ {
         if (this._ignoreEvent(e)) {
             return;
         }
-        this._fireDOMEvent(this, e, type);
+        // eslint-disable-next-line no-unused-expressions
+        !ignoreEvent && this._fireDOMEvent(this, e, type);
         if (mimicEvent) {
             this._fireDOMEvent(this, e, mimicEvent);
         }
@@ -318,9 +320,9 @@ Map.include(/** @lends Map.prototype */ {
         let eventParam = {
             'domEvent': e
         };
-        if (type !== 'keypress' && e.clientX !== undefined) {
+        if (type !== 'keypress') {
             const actual = this._getActualEvent(e);
-            if (actual) {
+            if (actual && actual.clientX !== undefined) {
                 const containerPoint = getEventContainerPoint(actual, this._containerDOM);
                 eventParam = extend(eventParam, {
                     'containerPoint': containerPoint,
