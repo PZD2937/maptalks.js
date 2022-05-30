@@ -135,7 +135,11 @@ const options = {
     'cascadePitches': [10, 60],
     'renderable': true,
 
-    'clickTimeThreshold': 280
+    'clickTimeThreshold': 280,
+
+    'minMovingEventThreshold': 5,
+
+    'longPressTimeThreshold': 500
 };
 
 /**

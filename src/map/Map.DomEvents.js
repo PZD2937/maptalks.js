@@ -1,4 +1,4 @@
-import { now, extend } from '../core/util';
+import {now, extend} from '../core/util';
 import {
     addDomEvent,
     removeDomEvent,
@@ -192,10 +192,26 @@ Map.include(/** @lends Map.prototype */ {
         const clickTimeThreshold = this.options['clickTimeThreshold'];
         const type = e.type;
         const isMouseDown = type === 'mousedown' || (type === 'touchstart' && (!e.touches || e.touches.length === 1));
+        const isMouseMoving = type === 'momousemove' || (type === 'touchmove' && (!e.touches || e.touches.length === 1));
+        // minimum movement event threshold
+        if (isMouseMoving && this._domMouseDownPoint && this._domMouseDownPoint.distanceTo(e.viewPoint) < this.options['minMovingEventThreshold']) {
+            return;
+        }
         // prevent default contextmenu
         if (isMouseDown) {
             this._domMouseDownTime = now();
             this._domMouseDownView = this.getView();
+            this._domMouseDownPoint = e.viewPoint;
+            // long press event
+            this._longPressTimer = setTimeout(() => {
+                this._fireDOMEvent(this, e, 'dom:longpress');
+            }, this.options['longPressTimeThreshold']);
+        } else {
+            // eslint-disable-next-line no-lonely-if
+            if (this._longPressTimer) {
+                clearTimeout(this._longPressTimer);
+                this._longPressTimer = 0;
+            }
         }
         const isRotating = type === 'contextmenu' && isRotatingMap(this);
         if (type === 'contextmenu') {
