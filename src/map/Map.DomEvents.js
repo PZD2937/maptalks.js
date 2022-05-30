@@ -175,7 +175,19 @@ const events =
      * @property {Point} viewPoint       - view point of the event
      * @property {Event} domEvent                 - dom event
      */
-    'touchend ';
+    'touchend ' +
+    /**
+     * longpress event
+     * @event Map#longpress
+     * @type {Object}
+     * @property {String} type                    - longpress
+     * @property {Map} target            - the map fires event
+     * @property {Coordinate} coordinate - coordinate of the event
+     * @property {Point} containerPoint  - container point of the event
+     * @property {Point} viewPoint       - view point of the event
+     * @property {Event} domEvent                 - dom event
+     */
+    'longpress ';
 
 Map.include(/** @lends Map.prototype */ {
     _registerDomEvents() {
@@ -194,18 +206,21 @@ Map.include(/** @lends Map.prototype */ {
         const isMouseDown = type === 'mousedown' || (type === 'touchstart' && (!e.touches || e.touches.length === 1));
         const isMouseMove = type === 'momousemove' || (type === 'touchmove' && (!e.touches || e.touches.length === 1));
         let ignoreEvent = false;
+        const actual = this._getActualEvent(e);
         // minimum movement event threshold
-        if (isMouseMove && this._domMouseDownPoint && this._domMouseDownPoint.distanceTo(e.viewPoint) < this.options['minMovingEventThreshold']) {
-            ignoreEvent = true;
+        // huawei and so on mobile touchstart will trigger touchmove at the same time
+        if (isMouseMove && this._domMouseDownPoint) {
+            const x = this._domMouseDownPoint.x - actual.clientX, y = this._domMouseDownPoint.y - actual.clientY;
+            if (Math.sqrt(x * x + y * y) < this.options['minMovingEventThreshold']) ignoreEvent = true;
         }
         // prevent default contextmenu
         if (isMouseDown) {
             this._domMouseDownTime = now();
             this._domMouseDownView = this.getView();
-            this._domMouseDownPoint = e.viewPoint;
+            this._domMouseDownPoint = { x: actual.clientX, y: actual.clientY };
             // long press event
             this._longPressTimer = setTimeout(() => {
-                this._fireDOMEvent(this, e, 'dom:longpress');
+                this._fireDOMEvent(this, e, 'longpress');
             }, this.options['longPressTimeThreshold']);
         } else {
             // eslint-disable-next-line no-lonely-if
