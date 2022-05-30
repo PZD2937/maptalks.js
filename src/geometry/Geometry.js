@@ -42,6 +42,7 @@ const TEMP_EXTENT = new PointExtent();
  * @property {Boolean} [options.dragShadow=true]    - if true, during geometry dragging, a shadow will be dragged before geometry was moved.
  * @property {Boolean} [options.dragOnAxis=null]    - if set, geometry can only be dragged along the specified axis, possible values: x, y
  * @property {Number}  [options.zIndex=undefined]   - geometry's initial zIndex
+ * @property {Boolean}  [options.antiMeridian=false]   - geometry's antiMeridian
  * @memberOf Geometry
  * @instance
  */
@@ -452,14 +453,14 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
             return null;
         }
         const map = this.getMap();
-        const center = this.getCenter();
+        // const center = this.getCenter();
         const glRes = map.getGLRes();
         const minAltitude = this.getMinAltitude();
-        const altitude = map.distanceToPointAtRes(minAltitude, 0, glRes, center).x * sign(minAltitude);
+        const altitude = map.altitudeToPoint(minAltitude, glRes) * sign(minAltitude);
         const extent = extent2d.convertTo(c => map._pointAtResToContainerPoint(c, glRes, altitude, TEMP_POINT0), out);
         let maxAltitude = this.getMaxAltitude();
         if (maxAltitude !== minAltitude) {
-            maxAltitude = map.distanceToPointAtRes(maxAltitude, 0, glRes, center).x * sign(maxAltitude);
+            maxAltitude = map.altitudeToPoint(maxAltitude, glRes) * sign(maxAltitude);
             const extent2 = extent2d.convertTo(c => map._pointAtResToContainerPoint(c, glRes, maxAltitude, TEMP_POINT0), TEMP_EXTENT);
             extent._combine(extent2);
         }
@@ -553,8 +554,9 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
         if (!painter) {
             return false;
         }
-        if (isNil(t) && this._hitTestTolerance) {
-            t = this._hitTestTolerance();
+        t = t || 0;
+        if (this._hitTestTolerance) {
+            t += this._hitTestTolerance();
         }
         return painter.hitTest(containerPoint, t);
     }
@@ -1416,6 +1418,11 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
             }
         }
         return properties;
+    }
+
+    _hitTestTolerance() {
+        const layer = this.getLayer();
+        return layer && layer.options['geometryEventTolerance'] || 0;
     }
 
 
