@@ -204,7 +204,7 @@ Map.include(/** @lends Map.prototype */ {
         const clickTimeThreshold = this.options['clickTimeThreshold'];
         const type = e.type;
         const isMouseDown = type === 'mousedown' || (type === 'touchstart' && (!e.touches || e.touches.length === 1));
-        const isMouseMove = type === 'momousemove' || (type === 'touchmove' && (!e.touches || e.touches.length === 1));
+        const isMouseMove = type === 'mousemove' || (type === 'touchmove' && (!e.touches || e.touches.length === 1));
         let ignoreEvent = false;
         const actual = this._getActualEvent(e);
         // minimum movement event threshold
