@@ -115,6 +115,7 @@ const GeoJSON = {
             }
             geometry.setId(json['id']);
             geometry.setProperties(json['properties']);
+            if (json['symbol']) geometry.setSymbol(json['symbol']);
             if (foreachFn) {
                 foreachFn(geometry);
             }
