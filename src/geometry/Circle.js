@@ -1,4 +1,4 @@
-import { extend, isNil } from '../core/util';
+import {addUnit, extend, isNil} from '../core/util';
 import { withInEllipse } from '../core/util/path';
 import Coordinate from '../geo/Coordinate';
 import Extent from '../geo/Extent';
@@ -56,7 +56,10 @@ class Circle extends CenterMixin(Polygon) {
      * Get radius of the circle
      * @return {Number}
      */
-    getRadius() {
+    getRadius(unit, fractionDigits) {
+        if (unit) {
+            return addUnit({ length: this._radius, unit, fractionDigits });
+        }
         return this._radius;
     }
 

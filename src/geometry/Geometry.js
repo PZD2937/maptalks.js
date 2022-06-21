@@ -11,7 +11,7 @@ import {
     isObject,
     forEachCoord,
     flash,
-    sign
+    sign, keepDecimals, addUnit
 } from '../core/util';
 import { extendSymbol, getSymbolHash } from '../core/util/style';
 import { loadGeoSymbol } from '../core/mapbox';
@@ -929,16 +929,24 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
      * Get the geographic length of the geometry.
      * @returns {Number} geographic length, unit is meter
      */
-    getLength() {
-        return this._computeGeodesicLength(this._getMeasurer());
+    getLength(unit, fractionDigits) {
+        let length = this._computeGeodesicLength(this._getMeasurer());
+        if (unit) {
+            length = addUnit({ length, unit, fractionDigits });
+        }
+        return length;
     }
 
     /**
      * Get the geographic area of the geometry.
      * @returns {Number} geographic area, unit is sq.meter
      */
-    getArea() {
-        return this._computeGeodesicArea(this._getMeasurer());
+    getArea(unit, fractionDigits) {
+        let area = this._computeGeodesicArea(this._getMeasurer());
+        if (unit) {
+            area = addUnit({ area, unit, fractionDigits });
+        }
+        return area;
     }
 
     /**

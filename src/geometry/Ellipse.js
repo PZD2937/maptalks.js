@@ -1,4 +1,4 @@
-import { extend, isNil } from '../core/util';
+import {addUnit, extend, isNil} from '../core/util';
 import { withInEllipse } from '../core/util/path';
 import Coordinate from '../geo/Coordinate';
 import CenterMixin from './CenterMixin';
@@ -53,7 +53,10 @@ class Ellipse extends CenterMixin(Polygon) {
      * Get ellipse's width
      * @return {Number}
      */
-    getWidth() {
+    getWidth(unit, fractionDigits) {
+        if (unit) {
+            return addUnit({ length: this.width, unit, fractionDigits });
+        }
         return this.width;
     }
 
@@ -73,7 +76,10 @@ class Ellipse extends CenterMixin(Polygon) {
      * Get ellipse's height
      * @return {Number}
      */
-    getHeight() {
+    getHeight(unit, fractionDigits) {
+        if (unit) {
+            return addUnit({ length: this.height, unit, fractionDigits });
+        }
         return this.height;
     }
 

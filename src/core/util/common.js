@@ -144,3 +144,36 @@ export function toRadian(d) {
 export function toDegree(r) {
     return r / pi;
 }
+
+export function keepDecimals(number, fractionDigits = 2, zeroPadding = false) {
+    if (zeroPadding) return Number(number).toFixed(fractionDigits);
+    return Number(Number(number).toFixed(fractionDigits));
+}
+
+
+export function addUnit(options) {
+    const { fractionDigits, unit } = options;
+    let { length, area } = options;
+    if (length) {
+        if (unit === 'SI') {
+            length = length < 1000 ? (keepDecimals(length, fractionDigits) + '米') : (keepDecimals(length / 1000, fractionDigits) + '千米');
+        } else {
+            length *= 3.2808399;
+            length = length < 5280 ? (keepDecimals(length, fractionDigits) + '英尺') : (keepDecimals(length / 5280, fractionDigits) + '英里');
+        }
+        return length;
+    } else if (area) {
+        if (unit === 'SI') {
+            area = area < 1E6 ? (keepDecimals(area, fractionDigits) + '平方米') : (keepDecimals(area / 1E6, fractionDigits) + '平方千米');
+        } else if (unit === 'MU') {
+            area = keepDecimals(area * 0.0015, fractionDigits) + '亩';
+        } else if (unit === 'HA') {
+            area = keepDecimals(area * 0.0001, fractionDigits) + '公顷';
+        } else {
+            area *= 10.7639104;
+            area = area < 27878400 ? (keepDecimals(area, fractionDigits) + '平方英尺') : (keepDecimals(area / 27878400, fractionDigits) + '平方英里');
+        }
+        return area;
+    }
+    return 0;
+}
