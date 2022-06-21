@@ -137,8 +137,6 @@ const options = {
 
     'clickTimeThreshold': 280,
 
-    'minMovingEventThreshold': 5,
-
     'longPressTimeThreshold': 500
 };
 

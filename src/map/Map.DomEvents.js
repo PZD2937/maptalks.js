@@ -211,7 +211,7 @@ Map.include(/** @lends Map.prototype */ {
         // huawei and so on mobile touchstart will trigger touchmove at the same time
         if (isMouseMove && this._domMouseDownPoint) {
             const x = this._domMouseDownPoint.x - actual.clientX, y = this._domMouseDownPoint.y - actual.clientY;
-            if (Math.sqrt(x * x + y * y) < this.options['minMovingEventThreshold']) ignoreEvent = true;
+            if (Math.sqrt(x * x + y * y) < 5) ignoreEvent = true;
         }
         // prevent default contextmenu
         if (isMouseDown) {
@@ -287,7 +287,7 @@ Map.include(/** @lends Map.prototype */ {
             return;
         }
         // eslint-disable-next-line no-unused-expressions
-        !ignoreEvent && this._fireDOMEvent(this, e, type);
+        this._fireDOMEvent(this, e, type);
         if (mimicEvent) {
             this._fireDOMEvent(this, e, mimicEvent);
         }
