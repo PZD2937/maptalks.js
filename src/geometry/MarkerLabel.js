@@ -3,6 +3,11 @@ import {extend, getAlignPoint} from '../core/util';
 
 class MarkerLabel extends Label {
 
+    static fromJSON(json) {
+        const feature = json['feature'];
+        return new MarkerLabel(json['content'], feature['geometry']['coordinates'], json['options']);
+    }
+
     getMarkerSymbol() {
         if (!this.options.markerSymbol) {
             return null;

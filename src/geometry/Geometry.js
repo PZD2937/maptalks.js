@@ -11,7 +11,7 @@ import {
     isObject,
     forEachCoord,
     flash,
-    sign, keepDecimals, addUnit
+    sign, addUnit
 } from '../core/util';
 import { extendSymbol, getSymbolHash } from '../core/util/style';
 import { loadGeoSymbol } from '../core/mapbox';
@@ -1016,7 +1016,9 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
     _bindLayer(layer) {
         //check dupliaction
         if (this.getLayer()) {
-            throw new Error('Geometry cannot be added to two or more layers at the same time.');
+            // throw new Error('Geometry cannot be added to two or more layers at the same time.');
+            console.warn('Geometry cannot be added to two or more layers at the same time.');
+            return;
         }
         this._layer = layer;
         this._clearCache();

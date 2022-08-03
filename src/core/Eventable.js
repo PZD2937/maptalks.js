@@ -233,7 +233,8 @@ const Eventable = Base =>
          * @function Eventable.fire
          */
         fire() {
-            if (this._eventParent) {
+            const eventType = arguments[0];
+            if (this._eventParent && this._eventParentFilter.includes(eventType)) {
                 return this._eventParent.fire.apply(this._eventParent, arguments);
             }
             return this._fire.apply(this, arguments);
@@ -291,7 +292,8 @@ const Eventable = Base =>
          * @private
          * @function Eventable._setEventParent
          */
-        _setEventParent(parent) {
+        _setEventParent(parent, filter) {
+            this._eventParentFilter = filter || [];
             this._eventParent = parent;
             return this;
         }

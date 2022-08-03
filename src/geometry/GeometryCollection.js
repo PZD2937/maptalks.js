@@ -1,10 +1,16 @@
-import { isFunction, isArrayHasData } from '../core/util';
-import { createFilter, getFilterFeature } from '@maptalks/feature-filter';
-import { getExternalResources } from '../core/util/resource';
+import {isFunction, isArrayHasData} from '../core/util';
+import {createFilter, getFilterFeature} from '@maptalks/feature-filter';
+import {getExternalResources} from '../core/util/resource';
 import Coordinate from '../geo/Coordinate';
 import PointExtent from '../geo/PointExtent';
 import Extent from '../geo/Extent';
 import Geometry from './Geometry';
+
+const eventFilter = [
+    'mousedown', 'mouseup', 'mousemove', 'click', 'dblclick', 'contextmenu',
+    'touchstart', 'touchmove', 'touchend', 'mouseenter', 'mouseover', 'mouseout',
+    'openmenu', 'closemenu', 'removemenu'
+];
 
 const TEMP_EXTENT = new PointExtent();
 
@@ -46,7 +52,7 @@ class GeometryCollection extends Geometry {
      * @return {GeometryCollection} this
      * @fires GeometryCollection#shapechange
      */
-    setGeometries(_geometries) {
+    setGeometries(_geometries, add) {
         const geometries = this._checkGeometries(_geometries || []);
         const symbol = this._getSymbol();
         const options = this.config();
@@ -54,12 +60,13 @@ class GeometryCollection extends Geometry {
         for (let i = geometries.length - 1; i >= 0; i--) {
             geometries[i]._initOptions(options);
             geometries[i]._setParent(this);
-            geometries[i]._setEventParent(this);
+            geometries[i]._setEventParent(this, eventFilter);
             if (symbol) {
                 geometries[i].setSymbol(symbol);
             }
+            geometries[i].on('remove', this._onChildGeometryRemove, this);
         }
-        this._geometries = geometries;
+        this._geometries = add ? this._geometries.concat(geometries) : geometries;
         if (this.getLayer()) {
             this._bindGeometriesToLayer();
             this.onShapeChanged();
@@ -73,6 +80,11 @@ class GeometryCollection extends Geometry {
      */
     getGeometries() {
         return this._geometries || [];
+    }
+
+    _onChildGeometryRemove(event) {
+        const index = this._geometries.findIndex(geometry => geometry === event.target);
+        if (index > -1) this._geometries.splice(index, 1);
     }
 
     /**

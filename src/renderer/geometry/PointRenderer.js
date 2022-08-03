@@ -83,7 +83,7 @@ const PolyRenderer = {
             points = [];
             rotations = [];
             const vertice = this._getPath2DPoints(this._getPrjCoordinates(), false, glRes),
-                isSplitted =  vertice.length > 0 && Array.isArray(vertice[0]);
+                isSplitted = vertice.length > 0 && Array.isArray(vertice[0]);
             if (isSplitted) {
                 //anti-meridian splitted
                 let ring;
@@ -120,9 +120,29 @@ const PolyRenderer = {
             points = l ? [curretPoint] : [];
             const previous = l > 1 ? l - 2 : l - 1;
             rotations = l ? [[coords[previous] ? map._prjToPointAtRes(coords[previous], glRes) : curretPoint, curretPoint]] : [];
+        } else if (placement === 'vertex-firstlast') {
+            const coords = this._getPrjCoordinates();
+            const l = coords.length;
+            const point0 = l ? map._prjToPointAtRes(coords[0], glRes) : null;
+            const curretPoint = l > 1 ? map._prjToPointAtRes(coords[l - 1], glRes) : null;
+            points = [];
+            rotations = [];
+            if (point0) {
+                points.push(point0);
+                if (l > 1) rotations.push(point0, map._prjToPointAtRes(coords[1], glRes));
+            }
+            if (curretPoint) {
+                points.push(curretPoint);
+                rotations.push(map._prjToPointAtRes(coords[l - 2], glRes), curretPoint);
+            }
         } else {
-            const pcenter = this._getProjection().project(this.getCenter());
-            points = [map._prjToPointAtRes(pcenter, glRes)];
+            const center = this.getCenter();
+            if (!center) {
+                points = [];
+            } else {
+                const pcenter = this._getProjection().project(center);
+                points = [map._prjToPointAtRes(pcenter, glRes)];
+            }
         }
         return [points, rotations];
     }

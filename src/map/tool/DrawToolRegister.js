@@ -174,6 +174,7 @@ const polygonHooks = {
 };
 
 DrawTool.registerMode('polygon', extend({
+    'shouldRecord': true,
     'action': ['click', 'mousemove', 'dblclick']
 }, polygonHooks));
 
@@ -206,6 +207,7 @@ const lineStringHooks = {
 };
 
 DrawTool.registerMode('linestring', extend({
+    'shouldRecord': true,
     'action': ['click', 'mousemove', 'dblclick']
 }, lineStringHooks));
 
@@ -214,6 +216,7 @@ DrawTool.registerMode('freeHandLinestring', extend({
 }, lineStringHooks));
 
 DrawTool.registerMode('arccurve', {
+    'shouldRecord': true,
     'action': ['click', 'mousemove', 'dblclick'],
     'create': function (projection, prjPath) {
         const path = prjPath.map(c => projection.unproject(c));
@@ -228,6 +231,7 @@ DrawTool.registerMode('arccurve', {
 });
 
 DrawTool.registerMode('quadbeziercurve', {
+    'shouldRecord': true,
     'action': ['click', 'mousemove', 'dblclick'],
     'create': function (projection, prjPath) {
         const path = prjPath.map(c => projection.unproject(c));
@@ -242,6 +246,7 @@ DrawTool.registerMode('quadbeziercurve', {
 });
 
 DrawTool.registerMode('cubicbeziercurve', {
+    'shouldRecord': true,
     'action': ['click', 'mousemove', 'dblclick'],
     'create': function (projection, prjPath) {
         const path = prjPath.map(c => projection.unproject(c));
