@@ -39,7 +39,7 @@ class CanvasRenderer extends Class {
         this.layer = layer;
         this._painted = false;
         this._drawTime = 0;
-        if (Browser.decodeImageInWorker) {
+        if (Browser.decodeImageInWorker && (layer.options['renderer'] === 'gl' || !Browser.safari)) {
             this._resWorkerConn = new ResourceWorkerConnection();
         }
         this.setToRedraw();
@@ -321,7 +321,7 @@ class CanvasRenderer extends Class {
         }
         const imageData = this.getImageData && this.getImageData();
         if (imageData) {
-            const x = r * point.x, y = r * point.y;
+            const x = Math.round(r * point.x), y = Math.round(r * point.y);
             const idx = y * imageData.width * 4 + x * 4;
             //索引下标从0开始需要-1
             return imageData.data[idx + 3] > 0;
@@ -774,7 +774,7 @@ class CanvasRenderer extends Class {
                 resolve(url);
                 return;
             }
-            if (!isSVG(url[0]) && Browser.decodeImageInWorker) {
+            if (!isSVG(url[0]) && me._resWorkerConn) {
                 const uri = getAbsoluteURL(url[0]);
                 me._resWorkerConn.fetchImage(uri, (err, data) => {
                     if (err) {
@@ -863,7 +863,7 @@ export class ResourceCache {
             height: +url[2],
             refCnt: 0
         };
-        if (img && !img.close && Browser.imageBitMap) {
+        if (img && !img.close && Browser.imageBitMap && !Browser.safari) {
             if (img.src && isSVG(img.src)) {
                 return;
             }

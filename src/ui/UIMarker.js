@@ -1,4 +1,4 @@
-import { isString, flash, isNil, extend, isFunction } from '../core/util';
+import { isString, flash, isNil, extend, isFunction, isNumber } from '../core/util';
 import { on, off, createEl, stopPropagation } from '../core/util/dom';
 import Browser from '../core/Browser';
 import Handler from '../handler/Handler';
@@ -263,6 +263,10 @@ class UIMarker extends Handlerable(UIComponent) {
 
     // for infowindow
     getAltitude() {
+        const coordinates = this.getCoordinates() || {};
+        if (isNumber(coordinates.z)) {
+            return coordinates.z;
+        }
         return this.options.altitude || 0;
     }
 
@@ -399,11 +403,27 @@ class UIMarker extends Handlerable(UIComponent) {
 
     _onDomEvents(e) {
         const event = this.getMap()._parseEvent(e, e.type);
+        const type = e.type;
+        if (type === 'mousedown') {
+            this._mousedownEvent = e;
+        }
+        if (type === 'mouseup') {
+            this._mouseupEvent = e;
+        }
+        if (type === 'click' && this._mouseClickPositionIsChange()) {
+            return;
+        }
         this.fire(e.type, event);
     }
 
     _removeDOMEvents(dom) {
         off(dom, domEvents, this._onDomEvents, this);
+    }
+
+    _mouseClickPositionIsChange() {
+        const { x: x1, y: y1 } = this._mousedownEvent || {};
+        const { x: x2, y: y2 } = this._mouseupEvent || {};
+        return (x1 !== x2 || y1 !== y2);
     }
 
     /**
@@ -636,7 +656,9 @@ class UIMarkerDragHandler extends Handler {
          * @property {Point} viewPoint       - view point of the event
          * @property {Event} domEvent                 - dom event
          */
-        target.fire('dragend', eventParam);
+        if (target && target._mouseClickPositionIsChange && target._mouseClickPositionIsChange()) {
+            target.fire('dragend', eventParam);
+        }
 
     }
 

@@ -251,6 +251,7 @@ class VectorLayer extends OverlayLayer {
             }
         }
         layer.addGeometry(geometries);
+        layer.addGeometry(geometries);
         return layer;
     }
 
