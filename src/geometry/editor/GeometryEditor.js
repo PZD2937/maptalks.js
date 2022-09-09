@@ -1,14 +1,14 @@
 import {INTERNAL_LAYER_PREFIX} from '../../core/Constants';
-import {isNil, isNumber, sign, removeFromArray, UID} from '../../core/util';
+import {isNil, isNumber, sign, removeFromArray, UID, isFunction} from '../../core/util';
 import {lowerSymbolOpacity} from '../../core/util/style';
 import Class from '../../core/Class';
 import Eventable from '../../core/Eventable';
 import Point from '../../geo/Point';
 import Coordinate from '../../geo/Coordinate';
-import {Marker, TextBox, LineString, Polygon, Circle, Ellipse, Sector, Rectangle} from '../';
+import { Marker, TextBox, LineString, Polygon, Circle, Ellipse, Sector, Rectangle } from '../';
 import EditHandle from '../../renderer/edit/EditHandle';
 import EditOutline from '../../renderer/edit/EditOutline';
-import {loadFunctionTypes} from '../../core/mapbox';
+import { loadFunctionTypes } from '../../core/mapbox';
 import * as Symbolizers from '../../renderer/geometry/symbolizers';
 
 const EDIT_STAGE_LAYER_PREFIX = INTERNAL_LAYER_PREFIX + '_edit_stage_';
@@ -924,6 +924,11 @@ class GeometryEditor extends Eventable(Class) {
         }
 
         function moveVertexHandle(handleConatainerPoint, index, ringIndex = 0) {
+            //for adsorption effect
+            const snapTo = me._geometry.snapTo;
+            if (snapTo && isFunction(snapTo)) {
+                handleConatainerPoint = me._geometry.snapTo(handleConatainerPoint) || handleConatainerPoint;
+            }
             const vertice = getVertexPrjCoordinates(ringIndex);
             const nVertex = map._containerPointToPrj(handleConatainerPoint.sub(getDxDy()));
             const pVertex = vertice[index];

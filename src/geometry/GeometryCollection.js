@@ -1,6 +1,6 @@
-import {isFunction, isArrayHasData} from '../core/util';
-import {createFilter, getFilterFeature} from '@maptalks/feature-filter';
-import {getExternalResources} from '../core/util/resource';
+import { isFunction, isArrayHasData } from '../core/util';
+import { createFilter, getFilterFeature } from '@maptalks/feature-filter';
+import { getExternalResources } from '../core/util/resource';
 import Coordinate from '../geo/Coordinate';
 import PointExtent from '../geo/PointExtent';
 import Extent from '../geo/Extent';

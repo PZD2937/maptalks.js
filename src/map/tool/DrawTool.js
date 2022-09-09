@@ -1,5 +1,5 @@
 import { INTERNAL_LAYER_PREFIX } from '../../core/Constants';
-import { isNil } from '../../core/util';
+import { isFunction, isNil } from '../../core/util';
 import { extendSymbol } from '../../core/util/style';
 import { getExternalResources } from '../../core/util/resource';
 import { stopPropagation } from '../../core/util/dom';
@@ -231,11 +231,12 @@ class DrawTool extends MapTool {
      */
     undo() {
         const registerMode = this._getRegisterMode();
-        if (!this._shouldRecordHistory(registerMode) || !this._historyPointer) {
+        const action = registerMode.action;
+        if (!this._shouldRecordHistory(action) || !this._historyPointer) {
             return this;
         }
         const coords = this._clickCoords.slice(0, --this._historyPointer);
-        registerMode.update(this.getMap().getProjection(), coords, this._geometry, { undo: true });
+        registerMode.update(this.getMap().getProjection(), coords, this._geometry);
         return this;
     }
 
@@ -245,7 +246,8 @@ class DrawTool extends MapTool {
      */
     redo() {
         const registerMode = this._getRegisterMode();
-        if (!this._shouldRecordHistory(registerMode) || isNil(this._historyPointer) || this._historyPointer === this._clickCoords.length) {
+        const action = registerMode.action;
+        if (!this._shouldRecordHistory(action) || isNil(this._historyPointer) || this._historyPointer === this._clickCoords.length) {
             return this;
         }
         const coords = this._clickCoords.slice(0, ++this._historyPointer);
@@ -255,15 +257,12 @@ class DrawTool extends MapTool {
 
     /**
      * check should recor history
-     * @param registerMode
+     * @param actions
      * @returns {boolean}
      * @private
      */
-    _shouldRecordHistory(registerMode) {
-        // const actions = registerMode.action;
-        // const shouldRecord = registerMode.shouldRecord;
-        // return Array.isArray(actions) && actions[0] === 'click' && actions[1] === 'mousemove' && actions[2] === 'dblclick' && shouldRecord;
-        return !!registerMode.shouldRecord;
+    _shouldRecordHistory(actions) {
+        return Array.isArray(actions) && actions[0] === 'click' && actions[1] === 'mousemove' && actions[2] === 'dblclick';
     }
 
     _checkMode() {
@@ -376,7 +375,13 @@ class DrawTool extends MapTool {
         if (!this._geometry) {
             this._createGeometry(event);
         } else {
-            const prjCoord = this.getMap()._pointToPrj(event['point2d']);
+            let prjCoord = this.getMap()._pointToPrj(event['point2d']);
+            const snapTo = this._geometry.snapTo;
+            //for adsorption effect
+            if (snapTo && isFunction(snapTo)) {
+                const containerPoint = this._geometry.snapTo(event.containerPoint) || event.containerPoint;
+                prjCoord = this.getMap()._containerPointToPrj(containerPoint);
+            }
             if (!isNil(this._historyPointer)) {
                 this._clickCoords = this._clickCoords.slice(0, this._historyPointer);
             }
@@ -460,11 +465,15 @@ class DrawTool extends MapTool {
         if (!this._geometry || !map || map.isInteracting()) {
             return;
         }
-        const containerPoint = this._getMouseContainerPoint(event);
+        let containerPoint = this._getMouseContainerPoint(event);
         if (!this._isValidContainerPoint(containerPoint)) {
             return;
         }
-        const prjCoord = this.getMap()._pointToPrj(event['point2d']);
+        let prjCoord = this.getMap()._pointToPrj(event['point2d']);
+        if (this._geometry.snapTo) {
+            containerPoint = this._geometry.snapTo(containerPoint) || containerPoint;
+            prjCoord = map._containerPointToPrj(containerPoint);
+        }
         const projection = map.getProjection();
         event.drawTool = this;
         const registerMode = this._getRegisterMode();
@@ -618,7 +627,7 @@ class DrawTool extends MapTool {
             drawToolLayer = new VectorLayer(drawLayerId, {
                 'enableSimplify': false,
                 'zIndex': Infinity,
-                'enableAltitude' : this.options['enableAltitude']
+                'enableAltitude': this.options['enableAltitude']
             });
             this._map.addLayer(drawToolLayer);
         }
@@ -631,6 +640,7 @@ class DrawTool extends MapTool {
         }
         if (this._geometry) {
             param['geometry'] = this._getRegisterMode()['generate'](this._geometry, { drawTool: this });
+            param.tempGeometry = this._geometry;
         }
         MapTool.prototype._fireEvent.call(this, eventName, param);
     }
