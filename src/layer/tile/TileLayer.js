@@ -9,6 +9,7 @@ import {
     isString,
     extend
 } from '../../core/util';
+import LRUCache from '../../core/util/LRUCache';
 import Browser from '../../core/Browser';
 import Size from '../../geo/Size';
 import Point from '../../geo/Point';
@@ -17,10 +18,10 @@ import TileConfig from './tileinfo/TileConfig';
 import TileSystem from './tileinfo/TileSystem';
 import Layer from '../Layer';
 import SpatialReference from '../../map/spatial-reference/SpatialReference';
-import {intersectsBox} from 'frustum-intersects';
+import { intersectsBox } from 'frustum-intersects';
 import * as vec3 from '../../core/util/vec3';
-import {registerWorkerAdapter} from '../../core/worker/Worker';
-import {imageFetchWorkerKey} from '../../core/worker/CoreWorkers';
+import { registerWorkerAdapter } from '../../core/worker/Worker';
+import { imageFetchWorkerKey } from '../../core/worker/CoreWorkers';
 
 const DEFAULT_MAXERROR = 1;
 const TEMP_POINT = new Point(0, 0);
@@ -28,7 +29,6 @@ const TEMP_POINT = new Point(0, 0);
 const MAX_ROOT_NODES = 32;
 
 const isSetAvailable = typeof Set !== 'undefined';
-
 class TileHashset {
     constructor() {
         this._table = isSetAvailable ? new Set() : {};
@@ -137,7 +137,11 @@ const options = {
 
     'pyramidMode': 1,
 
-    'decodeImageInWorker': true
+    'decodeImageInWorker': true,
+
+    'tileLimitPerFrame': 0,
+
+    'backZoomOffset': 0
 };
 
 const URL_PATTERN = /\{ *([\w_]+) *\}/g;
@@ -233,7 +237,7 @@ class TileLayer extends Layer {
     _getRootNodes(offset0) {
         const map = this.getMap();
         if (this._rootNodes) {
-            const {tiles, mapWidth, mapHeight} = this._rootNodes;
+            const { tiles, mapWidth, mapHeight } = this._rootNodes;
             if (map.width !== mapWidth || map.height !== mapHeight) {
                 const error = this._getRootError();
                 for (let i = 0; i < tiles.length; i++) {
@@ -253,7 +257,7 @@ class TileLayer extends Layer {
         const tileConfig = this._getTileConfig();
         const fullExtent = sr.getFullExtent();
 
-        const {origin, scale} = tileConfig.tileSystem;
+        const { origin, scale } = tileConfig.tileSystem;
         const extent000 = tileConfig.getTilePrjExtent(0, 0, res);
         const w = extent000.getWidth();
         const h = extent000.getHeight();
@@ -289,7 +293,8 @@ class TileLayer extends Layer {
                     id: this._getTileId(i, y, z),
                     url: this.getTileUrl(i, y, z + this.options['zoomOffset']),
                     offset: [0, 0],
-                    error: error
+                    error: error,
+                    children: []
                 });
             }
         }
@@ -321,23 +326,11 @@ class TileLayer extends Layer {
         return error * res / map.getResolution(0);
     }
 
-    _isExceedZooms(z) {
-        const minZoom = this.getMinZoom(), maxZoom = this.getMaxZoom();
-        return !isNil(minZoom) && z < minZoom || !isNil(maxZoom) && z > maxZoom;
-    }
 
     _getPyramidTiles(z, layer) {
         const map = this.getMap();
         if (isNaN(+z)) {
             z = this._getTileZoom(map.getZoom());
-        }
-        if (this._isExceedZooms(z)) {
-            return {
-                'zoom': z,
-                'extent': null,
-                'offset': this._getTileOffset(z),
-                'tiles': []
-            };
         }
         const sr = this.getSpatialReference();
         const maxZoom = Math.min(z, this.getMaxZoom());
@@ -386,6 +379,7 @@ class TileLayer extends Layer {
         const offsets = {
             0: offset0
         };
+        const preservedZoom = this.options['backZoomOffset'] + z;
         const extent = new PointExtent();
         const tiles = [];
         while (queue.length > 0) {
@@ -399,6 +393,10 @@ class TileLayer extends Layer {
                 offsets[node.z + 1] = this._getTileOffset(node.z + 1);
             }
             this._splitNode(node, projectionView, queue, tiles, extent, maxZoom, offsets[node.z + 1], layer && layer.getRenderer(), glRes);
+            if (preservedZoom < z && tiles[tiles.length - 1] !== node && preservedZoom === node.z) {
+                // extent._combine(node.extent2d);
+                tiles.push(node);
+            }
         }
         return {
             tileGrids: [
@@ -419,7 +417,7 @@ class TileLayer extends Layer {
         const scaleY = tileSystem.scale.y;
         const z = node.z + 1;
         const sr = this.getSpatialReference();
-        const {x, y, extent2d, idx, idy} = node;
+        const { x, y, extent2d, idx, idy } = node;
         const childScale = 2;
         const width = extent2d.getWidth() / 2 * childScale;
         const height = extent2d.getHeight() / 2 * childScale;
@@ -441,37 +439,52 @@ class TileLayer extends Layer {
             const childIdx = (idx << 1) + dx;
             const childIdy = (idy << 1) + dy;
 
-            const tileId = this._getTileId(childIdx, childIdy, z);
+            // const tileId = this._getTileId(childIdx, childIdy, z);
+            if (!node.children) {
+                node.children = [];
+            }
+            let tileId = node.children[i];
+            if (!tileId) {
+                tileId = this._getTileId(childIdx, childIdy, z);
+                node.children[i] = tileId;
+            }
             const cached = renderer.isTileCachedOrLoading(tileId);
             let extent;
-            if (!cached) {
-                if (scaleY < 0) {
-                    const nwx = minx + dx * width;
-                    const nwy = maxy - dy * height;
-                    // extent2d 是 node.z 级别上的 extent
-                    extent = new PointExtent(nwx, nwy - height, nwx + width, nwy);
-
-                } else {
-                    const swx = minx + dx * width;
-                    const swy = miny + dy * height;
-                    extent = new PointExtent(swx, swy, swx + width, swy + height);
-                }
-            }
             let childNode = cached && cached.info;
             if (!childNode) {
-                childNode = {
-                    x: childX,
-                    y: childY,
-                    idx: childIdx,
-                    idy: childIdy,
-                    z,
-                    extent2d: extent,
-                    error: node.error / 2,
-                    res,
-                    id: tileId,
-                    url: this.getTileUrl(childX, childY, z + this.options['zoomOffset']),
-                    offset
-                };
+                if (!this.tileInfoCache) {
+                    this.tileInfoCache = new LRUCache(this.options['maxCacheSize'] * 4);
+                }
+                childNode = this.tileInfoCache.get(tileId);
+                if (!childNode) {
+                    if (scaleY < 0) {
+                        const nwx = minx + dx * width;
+                        const nwy = maxy - dy * height;
+                        // extent2d 是 node.z 级别上的 extent
+                        extent = new PointExtent(nwx, nwy - height, nwx + width, nwy);
+
+                    } else {
+                        const swx = minx + dx * width;
+                        const swy = miny + dy * height;
+                        extent = new PointExtent(swx, swy, swx + width, swy + height);
+                    }
+                    childNode = {
+                        x: childX,
+                        y: childY,
+                        idx: childIdx,
+                        idy: childIdy,
+                        z,
+                        extent2d: extent,
+                        error: node.error / 2,
+                        res,
+                        id: tileId,
+                        parentNodeId: node.id,
+                        children: [],
+                        url: this.getTileUrl(childX, childY, z + this.options['zoomOffset']),
+                        offset
+                    };
+                    this.tileInfoCache.add(tileId, childNode);
+                }
                 if (parentRenderer) {
                     childNode['layer'] = this.getId();
                 }
@@ -485,6 +498,7 @@ class TileLayer extends Layer {
             } else if (visible === -1) {
                 continue;
             } else if (visible === 0 && z !== maxZoom) {
+                // 任意子瓦片的error低于maxError，则添加父级瓦片，不再遍历子瓦片
                 tiles.push(node);
                 gridExtent._combine(node.extent2d);
                 return;
@@ -501,6 +515,7 @@ class TileLayer extends Layer {
         } else {
             queue.push(...children);
         }
+
 
     }
 
@@ -558,11 +573,18 @@ class TileLayer extends Layer {
     // }
 
     _isTileInFrustum(node, projectionView, glScale, offset) {
-        const {xmin, ymin, xmax, ymax} = node.extent2d;
+        if (!this._zScale) {
+            const map = this.getMap();
+            const glRes = map.getGLRes();
+            this._zScale = map.altitudeToPoint(100, glRes) / 100;
+        }
+        const { xmin, ymin, xmax, ymax } = node.extent2d;
         TILE_BOX[0][0] = (xmin - offset[0]) * glScale;
         TILE_BOX[0][1] = (ymin - offset[1]) * glScale;
+        TILE_BOX[0][2] = (node.minAltitude || 0) * this._zScale;
         TILE_BOX[1][0] = (xmax - offset[0]) * glScale;
         TILE_BOX[1][1] = (ymax - offset[1]) * glScale;
+        TILE_BOX[1][2] = (node.maxAltitude || 0) * this._zScale;
         return intersectsBox(projectionView, TILE_BOX);
     }
 
@@ -575,7 +597,7 @@ class TileLayer extends Layer {
         // const fovDenominator = this._fovDenominator;
         const geometricError = node.error;
         const map = this.getMap();
-        const {xmin, ymin, xmax, ymax} = node.extent2d;
+        const { xmin, ymin, xmax, ymax } = node.extent2d;
         TILE_MIN[0] = (xmin - offset[0]) * glScale;
         TILE_MIN[1] = (ymin - offset[1]) * glScale;
         TILE_MAX[0] = (xmax - offset[0]) * glScale;
@@ -706,9 +728,6 @@ class TileLayer extends Layer {
         if (this.options.customTags) {
             extend(data, this.options.customTags);
         }
-        if (this.options.customTags) {
-            extend(data, this.options.customTags);
-        }
         return urlTemplate.replace(URL_PATTERN, function (str, key) {
             let value = data[key];
 
@@ -729,6 +748,9 @@ class TileLayer extends Layer {
     clear() {
         if (this._renderer) {
             this._renderer.clear();
+        }
+        if (this.tileInfoCache) {
+            this.tileInfoCache.reset();
         }
         /**
          * clear event, fired when tile layer is cleared.
@@ -846,8 +868,13 @@ class TileLayer extends Layer {
         if (!map || !this.isVisible() || !map.width || !map.height) {
             return emptyGrid;
         }
-        if (!ignoreMinZoom && this._isExceedZooms()) {
-            return emptyGrid;
+        if (!ignoreMinZoom) {
+            const minZoom = this.getMinZoom(),
+                maxZoom = this.getMaxZoom();
+            if (!isNil(minZoom) && z < minZoom ||
+                !isNil(maxZoom) && z > maxZoom) {
+                return emptyGrid;
+            }
         }
         const tileConfig = this._getTileConfig();
         if (!tileConfig) {
@@ -939,7 +966,7 @@ class TileLayer extends Layer {
 
                 let p;
                 if (tileInfo) {
-                    const {extent2d} = tileInfo;
+                    const { extent2d } = tileInfo;
                     tilePoint.set(extent2d.xmin, extent2d.ymax);
                     p = tilePoint;
                 } else if (!this._hasOwnSR) {
@@ -1125,7 +1152,7 @@ class TileLayer extends Layer {
     _getTileOffset(z) {
         let offset = this.options['offset'];
         if (isFunction(offset)) {
-            offset = offset(z, this.getMap());
+            offset = offset.call(this, z);
         }
         if (isNumber(offset)) {
             return [offset, offset];
@@ -1254,6 +1281,10 @@ class TileLayer extends Layer {
         delete this._sr;
         delete this._srMinZoom;
         delete this._hasOwnSR;
+        delete this._rootNodes;
+        if (this.tileInfoCache) {
+            this.tileInfoCache.reset();
+        }
         const renderer = this.getRenderer();
         if (renderer) {
             renderer.clear();
@@ -1348,9 +1379,6 @@ function registerWorkerSource() {
     if (!Browser.decodeImageInWorker) {
         return;
     }
-    registerWorkerAdapter(imageFetchWorkerKey, function () {
-        return workerSource;
-    });
+    registerWorkerAdapter(imageFetchWorkerKey, function () { return workerSource; });
 }
-
 registerWorkerSource();
