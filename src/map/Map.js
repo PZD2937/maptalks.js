@@ -136,7 +136,7 @@ const options = {
     'cascadePitches': [10, 60],
     'renderable': true,
 
-    'clickTimeThreshold': 280,
+    'clickTimeThreshold': Browser.safari ? 0 : 280,
 
 
     'longPressTimeThreshold': 500,

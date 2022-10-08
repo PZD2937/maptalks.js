@@ -1,8 +1,8 @@
-import { INTERNAL_LAYER_PREFIX } from '../../core/Constants';
-import { isFunction, isNil } from '../../core/util';
-import { extendSymbol } from '../../core/util/style';
-import { getExternalResources } from '../../core/util/resource';
-import { stopPropagation } from '../../core/util/dom';
+import {INTERNAL_LAYER_PREFIX} from '../../core/Constants';
+import {isFunction, isNil} from '../../core/util';
+import {extendSymbol} from '../../core/util/style';
+import {getExternalResources} from '../../core/util/resource';
+import {stopPropagation} from '../../core/util/dom';
 import Polygon from '../../geometry/Polygon';
 import VectorLayer from '../../layer/VectorLayer';
 import MapTool from './MapTool';
@@ -52,6 +52,36 @@ const registeredMode = {};
 class DrawTool extends MapTool {
 
     /**
+     * In default, DrawTool supports the following modes: <br>
+     * [Point, LineString, Polygon, Circle, Ellipse, Rectangle, ArcCurve, QuadBezierCurve, CubicBezierCurve] <br>
+     * You can easily add new mode to DrawTool by calling [registerMode]{@link DrawTool.registerMode}
+     * @param {Object} [options=null] - construct options
+     * @param {String} [options.mode=null]   - mode of the draw tool
+     * @param {Object} [options.symbol=null] - symbol of the geometries drawn
+     * @param {Boolean} [options.once=null]  - whether disable immediately once drawn a geometry.
+     * @param {Boolean} [options.autoPanAtEdge=false]  - Whether to make edge judgement or not.
+     */
+    constructor(options) {
+        super(options);
+        this._checkMode();
+        /**
+         * events
+         * @type {{click: DrawTool._clickHandler, mousemove: DrawTool._mouseMoveHandler, dblclick: DrawTool._doubleClickHandler, mousedown: DrawTool._mouseDownHandler, mouseup: DrawTool._mouseUpHandler}}
+         * @private
+         */
+        this._events = {
+            'click': this._clickHandler,
+            'mousemove touchmove': this._mouseMoveHandler,
+            'dblclick': this._doubleClickHandler,
+            'mousedown touchstart': this._mouseDownHandler,
+            'mouseup touchend': this._mouseUpHandler,
+            'mousemove': this._mouseMoveHandler,
+            'mousedown': this._mouseDownHandler,
+            'mouseup': this._mouseUpHandler
+        };
+    }
+
+    /**
      * Register a new mode for DrawTool
      * @param  {String} name       mode name
      * @param  {Object} modeAction modeActions
@@ -82,36 +112,6 @@ class DrawTool extends MapTool {
      */
     static getRegisterMode(name) {
         return registeredMode[name.toLowerCase()];
-    }
-
-    /**
-     * In default, DrawTool supports the following modes: <br>
-     * [Point, LineString, Polygon, Circle, Ellipse, Rectangle, ArcCurve, QuadBezierCurve, CubicBezierCurve] <br>
-     * You can easily add new mode to DrawTool by calling [registerMode]{@link DrawTool.registerMode}
-     * @param {Object} [options=null] - construct options
-     * @param {String} [options.mode=null]   - mode of the draw tool
-     * @param {Object} [options.symbol=null] - symbol of the geometries drawn
-     * @param {Boolean} [options.once=null]  - whether disable immediately once drawn a geometry.
-     * @param {Boolean} [options.autoPanAtEdge=false]  - Whether to make edge judgement or not.
-     */
-    constructor(options) {
-        super(options);
-        this._checkMode();
-        /**
-         * events
-         * @type {{click: DrawTool._clickHandler, mousemove: DrawTool._mouseMoveHandler, dblclick: DrawTool._doubleClickHandler, mousedown: DrawTool._mouseDownHandler, mouseup: DrawTool._mouseUpHandler}}
-         * @private
-         */
-        this._events = {
-            'click': this._clickHandler,
-            'mousemove touchmove': this._mouseMoveHandler,
-            'dblclick': this._doubleClickHandler,
-            'mousedown touchstart': this._mouseDownHandler,
-            'mouseup touchend': this._mouseUpHandler,
-            'mousemove': this._mouseMoveHandler,
-            'mousedown': this._mouseDownHandler,
-            'mouseup': this._mouseUpHandler
-        };
     }
 
     /**
@@ -197,7 +197,7 @@ class DrawTool extends MapTool {
         if (this.options['autoPanAtEdge']) {
             this._mapAutoPanAtEdge = map.options['autoPanAtEdge'];
             if (!this._mapAutoPanAtEdge) {
-                map.config({ autoPanAtEdge: true });
+                map.config({autoPanAtEdge: true});
             }
         }
         this._geometryEvents = map.options['geometryEvents'];
@@ -215,7 +215,7 @@ class DrawTool extends MapTool {
             map.removeLayer(this._getDrawLayer());
             if (this.options['autoPanAtEdge']) {
                 if (!this._mapAutoPanAtEdge) {
-                    map.config({ autoPanAtEdge: false });
+                    map.config({autoPanAtEdge: false});
                 }
             }
         }
@@ -588,7 +588,7 @@ class DrawTool extends MapTool {
     }
 
     _clearStage() {
-        this._getDrawLayer().clear();
+        if (!this.options['useTempLayer']) this._getDrawLayer().clear();
         delete this._geometry;
         delete this._clickCoords;
     }
@@ -639,7 +639,7 @@ class DrawTool extends MapTool {
             param = {};
         }
         if (this._geometry) {
-            param['geometry'] = this._getRegisterMode()['generate'](this._geometry, { drawTool: this });
+            param['geometry'] = this._getRegisterMode()['generate'](this._geometry, {drawTool: this});
             param.tempGeometry = this._geometry;
         }
         MapTool.prototype._fireEvent.call(this, eventName, param);

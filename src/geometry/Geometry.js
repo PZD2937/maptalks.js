@@ -350,7 +350,8 @@ class Geometry extends JSONAble(Eventable(Handlerable(Class))) {
         let s = this._getSymbol();
         if (Array.isArray(s)) {
             if (!Array.isArray(props)) {
-                throw new Error('Parameter of updateSymbol is not an array.');
+                props = [props];
+                // throw new Error('Parameter of updateSymbol is not an array.');
             }
             for (let i = 0; i < props.length; i++) {
                 if (isTextSymbol(props[i])) {
