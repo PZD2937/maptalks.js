@@ -18,10 +18,10 @@ import TileConfig from './tileinfo/TileConfig';
 import TileSystem from './tileinfo/TileSystem';
 import Layer from '../Layer';
 import SpatialReference from '../../map/spatial-reference/SpatialReference';
-import { intersectsBox } from 'frustum-intersects';
+import {intersectsBox} from 'frustum-intersects';
 import * as vec3 from '../../core/util/vec3';
-import { registerWorkerAdapter } from '../../core/worker/Worker';
-import { imageFetchWorkerKey } from '../../core/worker/CoreWorkers';
+import {registerWorkerAdapter} from '../../core/worker/Worker';
+import {imageFetchWorkerKey} from '../../core/worker/CoreWorkers';
 
 const DEFAULT_MAXERROR = 1;
 const TEMP_POINT = new Point(0, 0);
@@ -29,6 +29,7 @@ const TEMP_POINT = new Point(0, 0);
 const MAX_ROOT_NODES = 32;
 
 const isSetAvailable = typeof Set !== 'undefined';
+
 class TileHashset {
     constructor() {
         this._table = isSetAvailable ? new Set() : {};
@@ -237,7 +238,7 @@ class TileLayer extends Layer {
     _getRootNodes(offset0) {
         const map = this.getMap();
         if (this._rootNodes) {
-            const { tiles, mapWidth, mapHeight } = this._rootNodes;
+            const {tiles, mapWidth, mapHeight} = this._rootNodes;
             if (map.width !== mapWidth || map.height !== mapHeight) {
                 const error = this._getRootError();
                 for (let i = 0; i < tiles.length; i++) {
@@ -257,7 +258,7 @@ class TileLayer extends Layer {
         const tileConfig = this._getTileConfig();
         const fullExtent = sr.getFullExtent();
 
-        const { origin, scale } = tileConfig.tileSystem;
+        const {origin, scale} = tileConfig.tileSystem;
         const extent000 = tileConfig.getTilePrjExtent(0, 0, res);
         const w = extent000.getWidth();
         const h = extent000.getHeight();
@@ -417,7 +418,7 @@ class TileLayer extends Layer {
         const scaleY = tileSystem.scale.y;
         const z = node.z + 1;
         const sr = this.getSpatialReference();
-        const { x, y, extent2d, idx, idy } = node;
+        const {x, y, extent2d, idx, idy} = node;
         const childScale = 2;
         const width = extent2d.getWidth() / 2 * childScale;
         const height = extent2d.getHeight() / 2 * childScale;
@@ -578,7 +579,7 @@ class TileLayer extends Layer {
             const glRes = map.getGLRes();
             this._zScale = map.altitudeToPoint(100, glRes) / 100;
         }
-        const { xmin, ymin, xmax, ymax } = node.extent2d;
+        const {xmin, ymin, xmax, ymax} = node.extent2d;
         TILE_BOX[0][0] = (xmin - offset[0]) * glScale;
         TILE_BOX[0][1] = (ymin - offset[1]) * glScale;
         TILE_BOX[0][2] = (node.minAltitude || 0) * this._zScale;
@@ -597,7 +598,7 @@ class TileLayer extends Layer {
         // const fovDenominator = this._fovDenominator;
         const geometricError = node.error;
         const map = this.getMap();
-        const { xmin, ymin, xmax, ymax } = node.extent2d;
+        const {xmin, ymin, xmax, ymax} = node.extent2d;
         TILE_MIN[0] = (xmin - offset[0]) * glScale;
         TILE_MIN[1] = (ymin - offset[1]) * glScale;
         TILE_MAX[0] = (xmax - offset[0]) * glScale;
@@ -791,7 +792,12 @@ class TileLayer extends Layer {
         if (this._sr) {
             return this._sr;
         }
-        let config = this.options['spatialReference'];
+        this.setSpatialReference(this.options['spatialReference']);
+        return this._sr;
+    }
+
+    setSpatialReference(config) {
+        const map = this.getMap();
         if (isString(config)) {
             config = SpatialReference.getPreset(config);
             if (!config) {
@@ -802,7 +808,8 @@ class TileLayer extends Layer {
         this._srMinZoom = this._sr.getMinZoom();
         this._srMaxZoom = this._sr.getMaxZoom();
         this._hasOwnSR = this._sr.toJSON().projection !== map.getSpatialReference().toJSON().projection;
-        return this._sr;
+        this.clear();
+        return this;
     }
 
     getMinZoom() {
@@ -966,7 +973,7 @@ class TileLayer extends Layer {
 
                 let p;
                 if (tileInfo) {
-                    const { extent2d } = tileInfo;
+                    const {extent2d} = tileInfo;
                     tilePoint.set(extent2d.xmin, extent2d.ymax);
                     p = tilePoint;
                 } else if (!this._hasOwnSR) {
@@ -1379,6 +1386,9 @@ function registerWorkerSource() {
     if (!Browser.decodeImageInWorker) {
         return;
     }
-    registerWorkerAdapter(imageFetchWorkerKey, function () { return workerSource; });
+    registerWorkerAdapter(imageFetchWorkerKey, function () {
+        return workerSource;
+    });
 }
+
 registerWorkerSource();
