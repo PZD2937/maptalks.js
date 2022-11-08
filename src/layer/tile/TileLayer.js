@@ -797,6 +797,7 @@ class TileLayer extends Layer {
     }
 
     setSpatialReference(config) {
+        // this._onSpatialReferenceChange();
         const map = this.getMap();
         if (isString(config)) {
             config = SpatialReference.getPreset(config);
@@ -1070,6 +1071,7 @@ class TileLayer extends Layer {
                 return point0.distanceTo(center) - point1.distanceTo(center);
             });
         }
+        this._tileInView = tiles;
         return {
             'offset': offset,
             'zoom': tileZoom,
@@ -1342,7 +1344,7 @@ function (exports) {
     function requestImageOffscreen(url, cb, fetchOptions) {
         if (!offCanvas) {
             offCanvas = new OffscreenCanvas(2, 2);
-            offCtx = offCanvas.getContext('2d');
+            offCtx = offCanvas.getContext('2d', {willReadFrequently: true});
         }
         if(url.includes('file://')) {
             console.warn('fetch不支持file协议！');

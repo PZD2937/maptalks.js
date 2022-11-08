@@ -8,7 +8,7 @@
 
 import Browser from '../Browser';
 import { IS_NODE } from './env';
-import { isString, isNil } from './common';
+import { isString, isNil, isNumber } from './common';
 import { splitWords } from './strings';
 import Point from '../../geo/Point';
 import Size from '../../geo/Size';
@@ -337,7 +337,7 @@ export function getEventContainerPoint(ev, dom) {
     if (!ev) {
         ev = window.event;
     }
-    if (!ev.clientX) {
+    if (!isNumber(ev.clientX) && (ev.touches || ev.changedTouches)) {
         ev = ev.touches[0] || ev.changedTouches[0];
     }
 
