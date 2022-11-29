@@ -429,10 +429,10 @@ class TileLayerCanvasRenderer extends CanvasRenderer {
     loadTile(tile) {
         let tileImage;
         const tileLayer = this.layer.getLayer ? this.layer.getLayer(tile.layer) : this.layer;
-        const tileImageWorkerConn = tileLayer.options.decodeImageInWorker && tileLayer.options.renderer === 'gl';
+        const tileImageWorkerConn = tileLayer && tileLayer.options.decodeImageInWorker && tileLayer.options.renderer === 'gl';
         if (this._tileImageWorkerConn && tileImageWorkerConn && this.loadTileImage === this.constructor.prototype.loadTileImage) {
             tileImage = {};
-            if (tileLayer._fetchImage instanceof Function) {
+            if (tileLayer && tileLayer._fetchImage instanceof Function) {
                 tileLayer._fetchImage(tileImage, tile, { resolve: this.onTileLoad.bind(this), reject: this.onTileError.bind(this) });
             } else {
                 this._fetchImage(tileImage, tile);
