@@ -18,10 +18,8 @@ import TileConfig from './tileinfo/TileConfig';
 import TileSystem from './tileinfo/TileSystem';
 import Layer from '../Layer';
 import SpatialReference from '../../map/spatial-reference/SpatialReference';
-import {intersectsBox} from 'frustum-intersects';
+import { intersectsBox } from 'frustum-intersects';
 import * as vec3 from '../../core/util/vec3';
-import {registerWorkerAdapter} from '../../core/worker/Worker';
-import {imageFetchWorkerKey} from '../../core/worker/CoreWorkers';
 
 const DEFAULT_MAXERROR = 1;
 const TEMP_POINT = new Point(0, 0);
@@ -29,7 +27,6 @@ const TEMP_POINT = new Point(0, 0);
 const MAX_ROOT_NODES = 32;
 
 const isSetAvailable = typeof Set !== 'undefined';
-
 class TileHashset {
     constructor() {
         this._table = isSetAvailable ? new Set() : {};
@@ -86,6 +83,7 @@ class TileHashset {
  * @property {String}              [options.errorUrl=null]       - image to replace when encountering error on loading tile image
  * @property {Object}              [options.customTags=null]    - custom tag values in urlTemplate, e.g. { foo: 'bar' } for http://path/to/{z}/{x}/{y}?foo={foo}
  * @property {Boolean}             [options.decodeImageInWorker=false]  - decode image in worker, for better performance if the server support
+ * @property {String}              [options.token=null]       - token to replace {token} in template http://foo/bar/{z}/{x}/{y}?token={token}
  * @property {Object}              [options.fetchOptions=object]       - fetch params,such as fetchOptions: { 'headers': { 'accept': '' } }, about accept value more info https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation/List_of_default_Accept_values
  * @memberOf TileLayer
  * @instance
@@ -138,7 +136,7 @@ const options = {
 
     'pyramidMode': 1,
 
-    'decodeImageInWorker': true,
+    'decodeImageInWorker': false,
 
     'tileLimitPerFrame': 0,
 
@@ -238,7 +236,7 @@ class TileLayer extends Layer {
     _getRootNodes(offset0) {
         const map = this.getMap();
         if (this._rootNodes) {
-            const {tiles, mapWidth, mapHeight} = this._rootNodes;
+            const { tiles, mapWidth, mapHeight } = this._rootNodes;
             if (map.width !== mapWidth || map.height !== mapHeight) {
                 const error = this._getRootError();
                 for (let i = 0; i < tiles.length; i++) {
@@ -258,7 +256,7 @@ class TileLayer extends Layer {
         const tileConfig = this._getTileConfig();
         const fullExtent = sr.getFullExtent();
 
-        const {origin, scale} = tileConfig.tileSystem;
+        const { origin, scale } = tileConfig.tileSystem;
         const extent000 = tileConfig.getTilePrjExtent(0, 0, res);
         const w = extent000.getWidth();
         const h = extent000.getHeight();
@@ -418,7 +416,7 @@ class TileLayer extends Layer {
         const scaleY = tileSystem.scale.y;
         const z = node.z + 1;
         const sr = this.getSpatialReference();
-        const {x, y, extent2d, idx, idy} = node;
+        const { x, y, extent2d, idx, idy } = node;
         const childScale = 2;
         const width = extent2d.getWidth() / 2 * childScale;
         const height = extent2d.getHeight() / 2 * childScale;
@@ -579,7 +577,7 @@ class TileLayer extends Layer {
             const glRes = map.getGLRes();
             this._zScale = map.altitudeToPoint(100, glRes) / 100;
         }
-        const {xmin, ymin, xmax, ymax} = node.extent2d;
+        const { xmin, ymin, xmax, ymax } = node.extent2d;
         TILE_BOX[0][0] = (xmin - offset[0]) * glScale;
         TILE_BOX[0][1] = (ymin - offset[1]) * glScale;
         TILE_BOX[0][2] = (node.minAltitude || 0) * this._zScale;
@@ -598,7 +596,7 @@ class TileLayer extends Layer {
         // const fovDenominator = this._fovDenominator;
         const geometricError = node.error;
         const map = this.getMap();
-        const {xmin, ymin, xmax, ymax} = node.extent2d;
+        const { xmin, ymin, xmax, ymax } = node.extent2d;
         TILE_MIN[0] = (xmin - offset[0]) * glScale;
         TILE_MIN[1] = (ymin - offset[1]) * glScale;
         TILE_MAX[0] = (xmax - offset[0]) * glScale;
@@ -726,6 +724,9 @@ class TileLayer extends Layer {
             'z': z,
             's': domain
         };
+        if (this.options.token) {
+            data.token = this.options.token;
+        }
         if (this.options.customTags) {
             extend(data, this.options.customTags);
         }
@@ -792,13 +793,7 @@ class TileLayer extends Layer {
         if (this._sr) {
             return this._sr;
         }
-        this.setSpatialReference(this.options['spatialReference']);
-        return this._sr;
-    }
-
-    setSpatialReference(config) {
-        // this._onSpatialReferenceChange();
-        const map = this.getMap();
+        let config = this.options['spatialReference'];
         if (isString(config)) {
             config = SpatialReference.getPreset(config);
             if (!config) {
@@ -809,8 +804,7 @@ class TileLayer extends Layer {
         this._srMinZoom = this._sr.getMinZoom();
         this._srMaxZoom = this._sr.getMaxZoom();
         this._hasOwnSR = this._sr.toJSON().projection !== map.getSpatialReference().toJSON().projection;
-        this.clear();
-        return this;
+        return this._sr;
     }
 
     getMinZoom() {
@@ -974,7 +968,7 @@ class TileLayer extends Layer {
 
                 let p;
                 if (tileInfo) {
-                    const {extent2d} = tileInfo;
+                    const { extent2d } = tileInfo;
                     tilePoint.set(extent2d.xmin, extent2d.ymax);
                     p = tilePoint;
                 } else if (!this._hasOwnSR) {
@@ -1071,7 +1065,6 @@ class TileLayer extends Layer {
                 return point0.distanceTo(center) - point1.distanceTo(center);
             });
         }
-        this._tileInView = tiles;
         return {
             'offset': offset,
             'zoom': tileZoom,
@@ -1326,71 +1319,3 @@ function distanceToRect(min, max, xyz) {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-const workerSource = `
-function (exports) {
-    exports.onmessage = function (msg, postResponse) {
-        var url = msg.data.url;
-        var fetchOptions = msg.data.fetchOptions;
-        requestImageOffscreen(url, function (err, data) {
-            var buffers = [];
-            if (data && data.data && data.data.buffer) {
-                buffers.push(data.data.buffer);
-            }
-            postResponse(err, data, buffers);
-        }, fetchOptions);
-    };
-
-    var offCanvas, offCtx, fetchFun = fetch;
-    function requestImageOffscreen(url, cb, fetchOptions) {
-        if (!offCanvas) {
-            offCanvas = new OffscreenCanvas(2, 2);
-            offCtx = offCanvas.getContext('2d', {willReadFrequently: true});
-        }
-        if(url.includes('file://')) {
-            console.warn('fetch不支持file协议！');
-            fetchFun = fetchLocal;
-        }
-        fetchFun(url, fetchOptions ? fetchOptions : {})
-            .then(response => response.blob())
-            .then(blob => createImageBitmap(blob))
-            .then(bitmap => {
-                var { width, height } = bitmap;
-                offCanvas.width = width;
-                offCanvas.height = height;
-                offCtx.drawImage(bitmap, 0, 0);
-                bitmap.close();
-                var imgData = offCtx.getImageData(0, 0, width, height);
-                cb(null, { width, height, data: new Uint8Array(imgData.data) });
-            }).catch(err => {
-                console.warn('error when loading tile:', url);
-                console.warn(err);
-                cb(err);
-            });
-    }
-
-    function fetchLocal(url) {
-        return new Promise(function (resolve, reject) {
-            var xhr = new XMLHttpRequest();
-            xhr.onload = function () {
-                resolve(new Response(xhr.response, { status: xhr.status > 200 && xhr.status < 599 ? xhr.status : 200 }));
-            };
-            xhr.onerror = function () {
-                reject(new TypeError('Local request failed'));
-            };
-            xhr.open('GET', url);
-            xhr.responseType = 'arraybuffer';
-            xhr.send(null);
-        });
-    }
-}`;
-
-function registerWorkerSource() {
-    if (!Browser.decodeImageInWorker) {
-        return;
-    }
-    registerWorkerAdapter(imageFetchWorkerKey, function () {
-        return workerSource;
-    });
-}
-
-registerWorkerSource();
