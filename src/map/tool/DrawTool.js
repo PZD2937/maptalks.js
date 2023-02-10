@@ -231,12 +231,11 @@ class DrawTool extends MapTool {
      */
     undo() {
         const registerMode = this._getRegisterMode();
-        const action = registerMode.action;
-        if (!this._shouldRecordHistory(action) || !this._historyPointer) {
+        if (!this._shouldRecordHistory(registerMode) || !this._historyPointer) {
             return this;
         }
         const coords = this._clickCoords.slice(0, --this._historyPointer);
-        registerMode.update(this.getMap().getProjection(), coords, this._geometry);
+        registerMode.update(this.getMap().getProjection(), coords, this._geometry, { undo: true });
         return this;
     }
 
@@ -246,23 +245,25 @@ class DrawTool extends MapTool {
      */
     redo() {
         const registerMode = this._getRegisterMode();
-        const action = registerMode.action;
-        if (!this._shouldRecordHistory(action) || isNil(this._historyPointer) || this._historyPointer === this._clickCoords.length) {
+        if (!this._shouldRecordHistory(registerMode) || isNil(this._historyPointer) || this._historyPointer === this._clickCoords.length) {
             return this;
         }
         const coords = this._clickCoords.slice(0, ++this._historyPointer);
-        registerMode.update(this.getMap().getProjection(), coords, this._geometry);
+        registerMode.update(this.getMap().getProjection(), coords, this._geometry, { undo: true });
         return this;
     }
 
     /**
      * check should recor history
-     * @param actions
+     * @param registerMode
      * @returns {boolean}
      * @private
      */
-    _shouldRecordHistory(actions) {
-        return Array.isArray(actions) && actions[0] === 'click' && actions[1] === 'mousemove' && actions[2] === 'dblclick';
+    _shouldRecordHistory(registerMode) {
+        // const actions = registerMode.action;
+        // const shouldRecord = registerMode.shouldRecord;
+        // return Array.isArray(actions) && actions[0] === 'click' && actions[1] === 'mousemove' && actions[2] === 'dblclick' && shouldRecord;
+        return !!registerMode.shouldRecord;
     }
 
     _checkMode() {

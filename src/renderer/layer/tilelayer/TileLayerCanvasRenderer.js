@@ -436,7 +436,7 @@ class TileLayerCanvasRenderer extends CanvasRenderer {
         if (this._tileImageWorkerConn && tileImageWorkerConn && this.loadTileImage === this.constructor.prototype.loadTileImage) {
             tileImage = {};
             if (tileLayer && tileLayer._fetchImage instanceof Function) {
-                tileLayer._fetchImage(tileImage, tile, { resolve: this.onTileLoad.bind(this), reject: this.onTileError.bind(this) });
+                tileLayer._fetchImage(tileImage, tile, { resolve: this.onTileLoad.bind(this), reject: this.onTileError.bind(this, tileImage, tile) });
             } else {
                 this._fetchImage(tileImage, tile);
             }

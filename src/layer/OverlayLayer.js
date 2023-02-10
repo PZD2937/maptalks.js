@@ -187,27 +187,30 @@ class OverlayLayer extends Layer {
      * Adds one or more geometries to the layer
      * @param {Geometry|Geometry[]} geometries - one or more geometries
      * @param {Boolean|Object} [fitView=false]  - automatically set the map to a fit center and zoom for the geometries
+     * @param {Function} [callback]
      * @param {String} [fitView.easing=out]  - default animation type
      * @param {Number} [fitView.duration=map.options.zoomAnimationDuration]  - default animation time
      * @param {Function} [fitView.step=null]  - step function during animation, animation frame as the parameter
      * @return {OverlayLayer} this
      */
-    addGeometry(geometries, fitView) {
+    addGeometry(geometries, fitView, callback) {
         if (!geometries) {
             return this;
         }
         if (geometries.type === 'FeatureCollection') {
-            return this.addGeometry(GeoJSON.toGeometry(geometries), fitView);
+            return this.addGeometry(GeoJSON.toGeometry(geometries), fitView, callback);
         } else if (!Array.isArray(geometries)) {
-            const count = arguments.length;
-            const last = arguments[count - 1];
-            geometries = Array.prototype.slice.call(arguments, 0, count - 1);
-            fitView = last;
-            if (last && isObject(last) && (('type' in last) || last instanceof Geometry)) {
-                geometries.push(last);
-                fitView = false;
+            let count = arguments.length;
+            while (count--) {
+                const last = arguments[count];
+                if (last && isObject(last) && (('type' in last) || last instanceof Geometry)) {
+                    break;
+                }
             }
-            return this.addGeometry(geometries, fitView);
+            fitView = !!arguments[count + 1];
+            callback = arguments[count + 2];
+            geometries = Array.prototype.slice.call(arguments, 0, count + 1);
+            return this.addGeometry(geometries, fitView, callback);
         } else if (geometries.length === 0) {
             return this;
         }
@@ -270,6 +273,9 @@ class OverlayLayer extends Layer {
         this.fire('addgeo', {
             'geometries': geometries
         });
+        if (callback instanceof Function) {
+            callback({ geometries });
+        }
         return this;
     }
 
