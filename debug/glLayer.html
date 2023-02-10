@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <script type="text/javascript" src="../dist/maptalks.js"></script>
+    <script type="text/javascript" src="https://fuzhenn.github.io/chinese_coordinate_conversion/chncrs.js"></script>
+    <script type="text/javascript" src="https://maptalks.com/api/maptalks-gl-layers.js"></script>
+
+    <title>Title</title>
+    <style>
+        html,
+        body {
+            margin: 0px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-overlay {
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            position: absolute;
+            width: 200px;
+            top: 0;
+            left: 0;
+            padding: 10px;
+        }
+
+        .map-overlay .map-overlay-inner {
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .map-overlay-inner fieldset {
+            border: none;
+            padding: 0;
+            margin: 0 0 10px;
+        }
+
+        .map-overlay-inner fieldset:last-child {
+            margin: 0;
+        }
+
+        .map-overlay-inner select,
+        .map-overlay-inner input {
+            width: 100%;
+        }
+
+        .map-overlay-inner label {
+            display: block;
+            font-weight: bold;
+            margin: 0 0 5px;
+        }
+
+        .radio label {
+            display: inline;
+            font-weight: normal;
+        }
+
+        .radio input {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+<div id="map" class="map"></div>
+<div class="map-overlay">
+    <details open>
+        <summary>controls</summary>
+        <div class="map-overlay-inner">
+            <fieldset>
+                <div class="radio">
+                    <label>drawTool <input type="checkbox" id="drawTool" checked></label>
+                </div>
+                <div id="drawTool-mode-container">
+                    <fieldset>
+                        <select id="drawTool-mode" name="drawTool-mode">
+                            <option value="Point">Point</option>
+                            <option value="LineString" selected>LineString</option>
+                            <option value="Polygon">Polygon</option>
+                            <option value="Circle">Circle</option>
+                            <option value="Ellipse">Ellipse</option>
+                            <option value="Rectangle">Rectangle</option>
+                            <option value="ArcCurve">ArcCurve</option>
+                            <option value="QuadBezierCurve">QuadBezierCurve</option>
+                            <option value="CubicBezierCurve">CubicBezierCurve</option>
+                        </select>
+                    </fieldset>
+                </div>
+            </fieldset>
+        </div>
+    </details>
+</div>
+</body>
+<script>
+    const lineGLLayer = new maptalks.LineStringLayer('lineGLLayer', {
+        zIndex: 15,
+        crossOrigin: 'anonymous'
+    });
+    const pointGLLayer = new maptalks.PointLayer('pointGLLayer', {
+        zIndex: 15,
+        // hitDetect: false,
+        crossOrigin: 'anonymous'
+    });
+    const polygonGLLayer = new maptalks.PolygonLayer('polygonGLLayer', {
+        zIndex: 15,
+        // hitDetect: false,
+        crossOrigin: 'anonymous'
+    });
+
+    const tileLayer = new maptalks.TileLayer('baseTileLayer', {
+        urlTemplate: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+        subdomains: ['1', '2', '3', '4'],
+        maxZoom: 21,
+        maxAvailableZoom: 18,
+        zIndex: 10,
+        repeatWorld: false,
+        renderer: 'gl',
+        crossOrigin: 'anonymous',
+        decodeImageInWorker: true
+    })
+
+    const map = new maptalks.Map('map', {
+        center: [116.39158881629862, 39.90739423892174],
+        zoom: 15,
+        baseLayer: new maptalks.GroupGLLayer('group', [tileLayer, lineGLLayer, pointGLLayer, polygonGLLayer], {
+            background: false,
+            repeatWorld: false,
+            fadeAnimation: false,           //fade animation when loading tiles
+            cascadeTiles: true,             //draw cascaded tiles of different zooms to reduce tiles
+            hitDetect: false,
+            geometryEvents: false,
+            forceRenderOnMoving: true,
+            forceRenderOnZooming: true,
+            forceRenderOnRotating: false,
+            tileRetryCount: 2,                  //retry count of tiles
+            crossOrigin: 'anonymous',
+            decodeImageInWorker: true,
+            stopRenderOnOffscreen: true
+        })
+    });
+    const drawTool = new maptalks.DrawTool({
+        mode: 'LineString',
+        symbol: {
+            'lineColor': '#0878f6',
+            'lineWidth': 3,
+            'lineJoin': 'round'
+        }
+    }).addTo(map);
+
+    drawTool.on('drawend', e => {
+        const geometry = e.geometry;
+        if(geometry instanceof maptalks.Marker || geometry instanceof maptalks.MultiPoint){
+            pointGLLayer.addGeometry(geometry)
+        }else if (geometry instanceof maptalks.LineString || geometry instanceof maptalks.MultiLineString) {
+            lineGLLayer.addGeometry(geometry)
+        } else if (geometry instanceof maptalks.Polygon || geometry instanceof maptalks.MultiPolygon) {
+            polygonGLLayer.addGeometry(geometry)
+        }
+    })
+
+
+    const drawToolInp = document.getElementById('drawTool');
+    const drawToolModeSelectContainer = document.getElementById('drawTool-mode-container')
+    const drawToolModeSelect = document.getElementById('drawTool-mode');
+    drawToolInp.addEventListener('change', (e) => {
+        if (e.target.value) {
+            drawTool.enable();
+            drawToolModeSelectContainer.style.display = 'none';
+        } else {
+            drawTool.disable();
+            drawToolModeSelectContainer.style.display = '';
+        }
+    });
+
+    drawToolModeSelect.addEventListener('change', e => {
+        drawTool.setMode(e.target.value)
+    });
+</script>
+</html>
