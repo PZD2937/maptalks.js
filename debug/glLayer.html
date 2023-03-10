@@ -127,41 +127,49 @@
         renderer: 'gl',
         crossOrigin: 'anonymous',
         decodeImageInWorker: true
-    })
+    });
+
+    const groupGLLayer = new maptalks.GroupGLLayer('group', [tileLayer, lineGLLayer, pointGLLayer, polygonGLLayer], {
+        background: false,
+        repeatWorld: false,
+        fadeAnimation: false,           //fade animation when loading tiles
+        cascadeTiles: true,             //draw cascaded tiles of different zooms to reduce tiles
+        geometryEvents: false,
+        forceRenderOnMoving: true,
+        forceRenderOnZooming: true,
+        forceRenderOnRotating: false,
+        tileRetryCount: 2,                  //retry count of tiles
+        crossOrigin: 'anonymous',
+        decodeImageInWorker: true,
+        stopRenderOnOffscreen: true,
+    });
 
     const map = new maptalks.Map('map', {
         center: [116.39158881629862, 39.90739423892174],
         zoom: 15,
-        baseLayer: new maptalks.GroupGLLayer('group', [tileLayer, lineGLLayer, pointGLLayer, polygonGLLayer], {
-            background: false,
-            repeatWorld: false,
-            fadeAnimation: false,           //fade animation when loading tiles
-            cascadeTiles: true,             //draw cascaded tiles of different zooms to reduce tiles
-            hitDetect: false,
-            geometryEvents: false,
-            forceRenderOnMoving: true,
-            forceRenderOnZooming: true,
-            forceRenderOnRotating: false,
-            tileRetryCount: 2,                  //retry count of tiles
-            crossOrigin: 'anonymous',
-            decodeImageInWorker: true,
-            stopRenderOnOffscreen: true
-        })
+        baseLayer: groupGLLayer,
+        hitDetect: false,
+        viewHistory: false,
+        viewHistoryCount: 0,
+        doubleClickZoom: false,
+        fog: false,
+        maxZoom: 21
     });
     const drawTool = new maptalks.DrawTool({
         mode: 'LineString',
         symbol: {
             'lineColor': '#0878f6',
             'lineWidth': 3,
-            'lineJoin': 'round'
+            'lineJoin': 'round',
+            'polygonFill': 'rgba(255, 255, 255, 0.5)'
         }
     }).addTo(map);
 
     drawTool.on('drawend', e => {
         const geometry = e.geometry;
-        if(geometry instanceof maptalks.Marker || geometry instanceof maptalks.MultiPoint){
+        if (geometry instanceof maptalks.Marker || geometry instanceof maptalks.MultiPoint) {
             pointGLLayer.addGeometry(geometry)
-        }else if (geometry instanceof maptalks.LineString || geometry instanceof maptalks.MultiLineString) {
+        } else if (geometry instanceof maptalks.LineString || geometry instanceof maptalks.MultiLineString) {
             lineGLLayer.addGeometry(geometry)
         } else if (geometry instanceof maptalks.Polygon || geometry instanceof maptalks.MultiPolygon) {
             polygonGLLayer.addGeometry(geometry)
@@ -172,18 +180,27 @@
     const drawToolInp = document.getElementById('drawTool');
     const drawToolModeSelectContainer = document.getElementById('drawTool-mode-container')
     const drawToolModeSelect = document.getElementById('drawTool-mode');
-    drawToolInp.addEventListener('change', (e) => {
-        if (e.target.value) {
+    drawToolInp.addEventListener('change', e => {
+        if (e.target.checked) {
             drawTool.enable();
-            drawToolModeSelectContainer.style.display = 'none';
+            drawToolModeSelectContainer.style.display = '';
         } else {
             drawTool.disable();
-            drawToolModeSelectContainer.style.display = '';
+            drawToolModeSelectContainer.style.display = 'none';
         }
     });
 
     drawToolModeSelect.addEventListener('change', e => {
         drawTool.setMode(e.target.value)
     });
+
+    map.on('click', e => {
+        const geometry = groupGLLayer.identify(e.coordinate)
+        console.log(geometry);
+        if(geometry.length){
+            geometry[0].startEdit()
+        }
+    });
+
 </script>
 </html>

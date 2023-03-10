@@ -142,8 +142,8 @@ const options = {
 
     'longPressTimeThreshold': 500,
 
-    'stopRenderOnOffscreen': true
-,
+    'stopRenderOnOffscreen': true,
+
     'preventWheelScroll': true
 };
 
